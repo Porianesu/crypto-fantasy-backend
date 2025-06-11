@@ -17,12 +17,12 @@ export default async function handler(req: any, res: any) {
       if (!req.body) {
         return res.status(400).json({ error: '请求体不能为空' });
       }
-      const { username, password, avatar, solAsset } = req.body;
+      const { username, password, avatar } = req.body;
       if (!username || !password) {
         return res.status(400).json({ error: '用户名和密码不能为空' });
       }
       const user = await prisma.user.create({
-        data: { username, password, avatar, solAsset }
+        data: { username, password, avatar, solAsset: 0 }
       });
       res.status(200).json(user);
     } catch (error) {
