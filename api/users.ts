@@ -9,6 +9,7 @@ export default async function handler(req: any, res: any) {
       const users = await prisma.user.findMany();
       res.status(200).json(users);
     } catch (error) {
+      console.log('get users error', error);
       res.status(500).json({ error: '获取用户失败' });
     }
   } else if (req.method === 'POST') {
