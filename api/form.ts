@@ -25,7 +25,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (error) {
       res.status(500).json({ code: 1004, error: 'Form submission failed.' });
     }
+  } else if (req.method === 'GET') {
+    try {
+      const submissions = await prisma.formSubmission.findMany({ orderBy: { createdAt: 'desc' } });
+      res.status(200).json(submissions);
+    } catch (error) {
+      res.status(500).json({ code: 2001, error: 'Failed to fetch submissions.' });
+    }
   } else {
-    res.status(405).json({ code: 1005, error: 'Only POST method is allowed.' });
+    res.status(405).json({ code: 1005, error: 'Only POST and GET methods are allowed.' });
   }
 }
