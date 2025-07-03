@@ -7,21 +7,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     try {
       if (!req.body) {
-        return res.status(400).json({ error: '请求体不能为空' });
+        return res.status(400).json({ code: 1001, error: 'Request body cannot be empty.' });
       }
       const { name, email, note } = req.body;
       if (!name || !email) {
-        return res.status(400).json({ error: 'Name和Email不能为空' });
+        return res.status(400).json({ code: 1002, error: 'Name and Email are required.' });
+      }
+      // 检查email是否已存在
+      const existing = await prisma.formSubmission.findFirst({ where: { email } });
+      if (existing) {
+        return res.status(409).json({ code: 1003, error: 'This email has already submitted.' });
       }
       const submission = await prisma.formSubmission.create({
         data: { name, email, note }
       });
       res.status(200).json(submission);
     } catch (error) {
-      res.status(500).json({ error: '表单提交失败' });
+      res.status(500).json({ code: 1004, error: 'Form submission failed.' });
     }
   } else {
-    res.status(405).json({ error: '仅支持POST方法' });
+    res.status(405).json({ code: 1005, error: 'Only POST method is allowed.' });
   }
 }
-
