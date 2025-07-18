@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -17,16 +18,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!req.body) {
         return res.status(400).json({ error: '请求体不能为空' });
       }
-      const { username, password, avatar } = req.body;
-      if (!username || !password) {
-        return res.status(400).json({ error: '用户名和密码不能为空' });
+      const { email, password } = req.body;
+      // 邮箱格式校验
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (typeof email !== 'string' || !emailRegex.test(email)) {
+        return res.status(400).json({ error: '邮箱格式不正确' });
       }
-      const user = await prisma.user.create({
-        data: { username, password, avatar, solAsset: 0 }
-      });
-      res.status(200).json(user);
+      // 密码长度和类型校验
+      if (typeof password !== 'string' || password.length < 6 || password.length > 32) {
+        return res.status(400).json({ error: '密码长度需为6-32位' });
+      }
+      if (!email || !password) {
+        return res.status(400).json({ error: '邮箱和密码不能为空' });
+      }
+      // 查找用户
+      const exist = await prisma.user.findUnique({ where: { email } });
+      if (!exist) {
+        // 注册流程
+        const hash = await bcrypt.hash(password, 10);
+        const user = await prisma.user.create({
+          data: {
+            email,
+            password: hash,
+            solAsset: 100,
+            hasAlreadyReadGuide: false,
+            faithAmount: 1000,
+            expPercent: 0,
+            meltCurrent: 0,
+            meltMax: 0,
+            cardsBag: []
+          }
+        });
+        // 不返回密码
+        const { password: _, ...userData } = user;
+        return res.status(200).json(userData);
+      } else {
+        // 登录流程
+        const valid = await bcrypt.compare(password, exist.password);
+        if (!valid) {
+          return res.status(400).json({ error: '密码错误' });
+        }
+        // 不返回密码
+        const { password: _, ...userData } = exist;
+        return res.status(200).json(userData);
+      }
     } catch (error) {
-      res.status(500).json({ error: '创建用户失败' });
+      res.status(500).json({ error: '操作失败' });
     }
   } else {
     res.status(405).json({ error: 'Method Not Allowed' });
