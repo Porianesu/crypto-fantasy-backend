@@ -19,21 +19,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: 'Request body cannot be empty' });
       }
       const { email, password } = req.body;
-      // 邮箱格式校验
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (typeof email !== 'string' || !emailRegex.test(email)) {
-        return res.status(400).json({ error: 'Invalid email format' });
-      }
-      // 密码长度和类型校验
-      if (typeof password !== 'string' || password.length < 6 || password.length > 32) {
-        return res.status(400).json({ error: 'Password length must be 6-32 characters' });
-      }
       if (!email || !password) {
         return res.status(400).json({ error: 'Email and password cannot be empty' });
       }
       // 查找用户
       const exist = await prisma.user.findUnique({ where: { email } });
       if (!exist) {
+        // 邮箱格式校验
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (typeof email !== 'string' || !emailRegex.test(email)) {
+          return res.status(400).json({ error: 'Invalid email format' });
+        }
+        // 密码长度和类型校验
+        if (typeof password !== 'string' || password.length < 6 || password.length > 32) {
+          return res.status(400).json({ error: 'Password length must be 6-32 characters' });
+        }
         // 注册流程
         const hash = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
