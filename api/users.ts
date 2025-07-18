@@ -63,6 +63,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json(userData);
       }
     } catch (error) {
+      console.log('get users error', error);
       res.status(500).json({ error: 'Operation failed' });
     }
   } else {
