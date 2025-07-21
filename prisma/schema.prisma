@@ -30,16 +30,16 @@ model Card {
   id               Int    @id @default(autoincrement())
   name             String
   nickname         String
-  description      String
   imageUrl         String
-  rarity           Int
-  score            Int
-  pnl_30           Float  @map("30_pnl")
-  winrate_30       Float  @map("30_winrate")
-  average_duration Int
   faction          String
   tag              String
   quote            String
+  rarity           Int
+  score            Int
+  pnl_30           Float
+  winrate_30       Float
+  score_rank       Float
+  average_duration Int
   backstory        String
 }
 
