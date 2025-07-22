@@ -1,8 +1,10 @@
 import {VercelRequest, VercelResponse} from '@vercel/node';
 import {PrismaClient} from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET as string;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 设置CORS头
@@ -60,9 +62,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
         // 不返回密码
         const {password: _, ...userData} = user;
+        // 生成token
+        const token = jwt.sign({ email: user.email }, JWT_SECRET, { expiresIn: '7d' });
         return res.status(200).json({
           type: 'register',
-          ...userData
+          token,
+          user: userData
         });
       } else {
         // 登录流程
@@ -72,9 +77,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         // 不返回密码
         const {password: _, ...userData} = exist;
+        // 生成token
+        const token = jwt.sign({ email: exist.email }, JWT_SECRET, { expiresIn: '7d' });
         return res.status(200).json({
           type: 'login',
-          ...userData
+          token,
+          user: userData
         });
       }
     } catch (error) {
