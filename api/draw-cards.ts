@@ -1,22 +1,9 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from './utils/jwt';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET as string;
-
-function verifyToken(req: VercelRequest): string | null {
-  const auth = req.headers['authorization'] || req.headers['Authorization'];
-  if (!auth || typeof auth !== 'string') return null;
-  const token = auth.replace(/^Bearer\s+/i, '');
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { email: string };
-    return decoded.email;
-  } catch {
-    return null;
-  }
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
