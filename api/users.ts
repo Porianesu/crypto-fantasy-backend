@@ -54,8 +54,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             hasAlreadyReadGuide: false,
             faithAmount: 1000,
             expPercent: 0,
-            meltCurrent: 0,
-            meltMax: 0,
+            meltCurrent: 20,
+            meltMax: 20,
             cardsBag: []
           }
         });
