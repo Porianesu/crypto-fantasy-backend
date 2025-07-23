@@ -50,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           data: {
             email,
             password: hash,
-            solAmount: 100,
+            solAmount: 20,
             hasAlreadyReadGuide: false,
             faithAmount: 10000,
             expPercent: 0,
