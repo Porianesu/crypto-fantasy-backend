@@ -52,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             password: hash,
             solAmount: 100,
             hasAlreadyReadGuide: false,
-            faithAmount: 1000,
+            faithAmount: 10000,
             expPercent: 0,
             meltCurrent: 20,
             meltMax: 20,
