@@ -28,6 +28,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'User not found' });
   }
   const userId = user.id;
+  if (user.meltCurrent <= 0) {
+    return res.status(403).json({error: 'Melt limit reached, please try again later'});
+  }
 
   const { cardId } = req.body;
   const parsedCardId = Number(cardId);
@@ -60,11 +63,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 增加用户faithAmount
   const updatedUser = await prisma.user.update({
     where: { id: userId },
-    data: { faithAmount: { increment: meltConfig.faithCoin } },
+    data: {
+      faithAmount: { increment: meltConfig.faithCoin },
+      meltCurrent: { decrement: 1 }
+    },
   });
+
+  const { password, ...userData } = updatedUser
 
   return res.status(200).json({
     addedFaithCoin: meltConfig.faithCoin,
-    faithAmount: updatedUser.faithAmount,
+    user: userData,
   });
 }
