@@ -56,7 +56,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             expPercent: 0,
             meltCurrent: 20,
             meltMax: 20,
-            cardsBag: []
           }
         });
         // 不返回密码
