@@ -1,0 +1,24 @@
+name: Update Melt Current
+
+on:
+  schedule:
+    - cron: '0 * * * *' # 每小时执行一次，UTC时间
+  workflow_dispatch:     # 允许手动触发
+
+jobs:
+  update-melt-current:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build (如果用 TypeScript)
+        run: npx tsc
+      - name: Run updateMeltCurrent
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: node updateMeltCurrent.js
