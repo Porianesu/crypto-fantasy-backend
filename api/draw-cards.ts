@@ -31,7 +31,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // 查询所有卡牌
-  const cardsData = await prisma.card.findMany();
+  const cardsData = await prisma.card.findMany({
+    orderBy: { id: 'asc' } // 确保卡牌按id顺序
+  });
   if (!cardsData || cardsData.length === 0) {
     return res.status(500).json({ error: 'No card data found' });
   }
