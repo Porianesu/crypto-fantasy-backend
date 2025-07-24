@@ -34,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else {
         // 分页查询所有卡牌
         const pageNum = Math.max(1, parseInt(page as string, 10));
-        const pageSizeNum = Math.max(1, parseInt(pageSize as string, 10));
+        const pageSizeNum = Math.min(200, Math.max(1, parseInt(pageSize as string, 10)))
         const [cards, total] = await Promise.all([
           prisma.card.findMany({
             skip: (pageNum - 1) * pageSizeNum,

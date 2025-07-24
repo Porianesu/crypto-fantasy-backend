@@ -31,8 +31,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = user.id;
 
   const { page = 1, pageSize = 20 } = req.query;
-  const skip = (Number(page) - 1) * Number(pageSize);
-  const take = Number(pageSize);
+  const take = Math.min(Number(pageSize), 50);
+  const skip = (Number(page) - 1) * take;
 
   try {
     const [total, userCards] = await Promise.all([
@@ -48,7 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({
       total,
       page: Number(page),
-      pageSize: Number(pageSize),
+      pageSize: take,
       cards: userCards.map(uc => uc.card)
     });
   } catch (error) {
