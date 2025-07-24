@@ -23,7 +23,6 @@ model User {
   expPercent          Float      @default(0)
   meltCurrent         Int        @default(0)
   meltMax             Int        @default(0)
-  cardsBag            Int[] // 直接用Int数组存储cardId
   cardsOwned          UserCard[] @relation("UserCardsOwned")
 }
 
