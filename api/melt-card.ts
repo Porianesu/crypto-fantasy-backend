@@ -30,18 +30,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = user.id;
 
   const { cardId } = req.body;
-  if (!cardId || isNaN(Number(cardId))) {
-    return res.status(400).json({ error: 'Invalid cardId' });
+  const parsedCardId = Number(cardId);
+  if (
+    cardId === undefined || cardId === null || isNaN(parsedCardId) || parsedCardId < 0
+  ) {
+    return res.status(400).json({ error: 'Invalid cardId, must be a positive integer' });
   }
 
   // 查询用户是否拥有该卡
-  const userCard = await prisma.userCard.findFirst({ where: { userId, cardId: Number(cardId) } });
+  const userCard = await prisma.userCard.findFirst({ where: { userId, cardId: parsedCardId } });
   if (!userCard) {
     return res.status(404).json({ error: 'Card not found in user inventory' });
   }
 
   // 查询卡牌稀有度
-  const card = await prisma.card.findUnique({ where: { id: Number(cardId) } });
+  const card = await prisma.card.findUnique({ where: { id: parsedCardId } });
   if (!card) {
     return res.status(404).json({ error: 'Card not found' });
   }
@@ -64,4 +67,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     faithAmount: updatedUser.faithAmount,
   });
 }
-
