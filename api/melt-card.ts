@@ -72,7 +72,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { password, ...userData } = updatedUser
 
   return res.status(200).json({
-    addedFaithCoin: meltConfig.faithCoin,
     user: userData,
   });
 }
