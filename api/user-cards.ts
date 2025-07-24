@@ -31,7 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const userId = user.id;
 
   const { page = 1, pageSize = 20 } = req.query;
-  const take = Math.min(Number(pageSize), 50);
+  const take = Math.min(Number(pageSize), 200);
   const skip = (Number(page) - 1) * take;
 
   try {
