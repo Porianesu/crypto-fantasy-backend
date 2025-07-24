@@ -74,15 +74,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const newCardsBag = Array.isArray(user.cardsBag)
     ? [...user.cardsBag, ...resultCards.map(card => card.id)]
     : resultCards.map(card => card.id);
-  const updatedUser = await prisma.user.update({
-    where: { email },
-    data: {
-      solAmount: newSolAmount,
-      cardsBag: newCardsBag,
-    },
-  });
-
-  // 不返回密码
-  const { password, ...userData } = updatedUser;
+  // const updatedUser = await prisma.user.update({
+  //   where: { email },
+  //   data: {
+  //     solAmount: newSolAmount,
+  //     cardsBag: newCardsBag,
+  //   },
+  // });
+  //
+  // // 不返回密码
+  // const { password, ...userData } = updatedUser;
+  const { password, ...userData } = user
   res.status(200).json({ cards: resultCards, user: userData });
 }
