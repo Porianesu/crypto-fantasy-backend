@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       total,
       page: Number(page),
       pageSize: take,
-      cards: userCards.map(uc => uc.card)
+      cardIds: userCards.map(uc => uc.cardId)
     });
   } catch (error) {
     console.error('get user cards error', error);
