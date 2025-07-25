@@ -99,59 +99,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Craft success rate:', successRate.toString());
   const randomNumber = new BigNumber(Math.random())
   console.log('randomNumber', randomNumber.toString())
-  if (randomNumber.isLessThanOrEqualTo(successRate)) {
-    // 合成成功：删除消耗的卡牌，添加新卡牌
-    const deleteIds = [
-      ...requiredCards.map(userCard => userCard.id),
-      ...additiveCards.map(userCard => userCard.id)
-    ];
-    await prisma.userCard.deleteMany({
-      where: {
-        id: { in: deleteIds }
-      }
-    });
-    await prisma.userCard.create({
-      data: {
-        userId: user.id,
-        cardId: craftCard.id
-      }
-    });
-    return res.status(200).json({ success: true, user: userData, resultCards: [craftCard] });
-  } else {
-    // 合成失败逻辑：按规则返还部分消耗卡牌
-    // 随机返还一张 requiredCards 中的卡
-    const randomRequiredCardIndex = Math.floor(Math.random() * requiredCards.length);
-    const returnRequiredCard = requiredCards[randomRequiredCardIndex];
-    const resultCards: number[] = [returnRequiredCard.cardId];
-    // 可选：随机返还一张 additiveCards 中的卡
-    if (additiveCards.length > 0) {
-      const randomAdditiveCardIndex = Math.floor(Math.random() * additiveCards.length);
-      const returnAdditiveCard = additiveCards[randomAdditiveCardIndex];
-      resultCards.push(returnAdditiveCard.cardId);
-    }
-    // 删除所有消耗的卡牌
-    const deleteIds = [
-      ...requiredCards.map(userCard => userCard.id),
-      ...additiveCards.map(userCard => userCard.id)
-    ];
-    await prisma.userCard.deleteMany({
-      where: {
-        id: { in: deleteIds }
-      }
-    });
-    // 返还 resultCards 到用户背包
-    for (const cardId of resultCards) {
+  try {
+    if (randomNumber.isLessThanOrEqualTo(successRate)) {
+      // 合成成功：删除消耗的卡牌，添加新卡牌
+      const deleteIds = [
+        ...requiredCards.map(userCard => userCard.id),
+        ...additiveCards.map(userCard => userCard.id)
+      ];
+      await prisma.userCard.deleteMany({
+        where: {
+          id: { in: deleteIds }
+        }
+      });
       await prisma.userCard.create({
         data: {
           userId: user.id,
-          cardId: cardId
+          cardId: craftCard.id
         }
       });
+      return res.status(200).json({ success: true, user: userData, resultCards: [craftCard] });
+    } else {
+      // 合成失败逻辑：按规则返还部分消耗卡牌
+      // 随机返还一张 requiredCards 中的卡
+      const randomRequiredCardIndex = Math.floor(Math.random() * requiredCards.length);
+      const returnRequiredCard = requiredCards[randomRequiredCardIndex];
+      const resultCards: number[] = [returnRequiredCard.cardId];
+      // 可选：随机返还一张 additiveCards 中的卡
+      if (additiveCards.length > 0) {
+        const randomAdditiveCardIndex = Math.floor(Math.random() * additiveCards.length);
+        const returnAdditiveCard = additiveCards[randomAdditiveCardIndex];
+        resultCards.push(returnAdditiveCard.cardId);
+      }
+      // 删除所有消耗的卡牌
+      const deleteIds = [
+        ...requiredCards.map(userCard => userCard.id),
+        ...additiveCards.map(userCard => userCard.id)
+      ];
+      await prisma.userCard.deleteMany({
+        where: {
+          id: { in: deleteIds }
+        }
+      });
+      // 返还 resultCards 到用户背包
+      await Promise.all(resultCards.map(cardId =>
+        prisma.userCard.create({
+          data: {
+            userId: user.id,
+            cardId: cardId
+          }
+        })
+      ));
+      const returnedCards = await prisma.card.findMany({
+        where: { id: { in: resultCards } }
+      });
+      return res.status(200).json({ success: false, user: userData, resultCards: returnedCards });
     }
-    // 查询返还卡牌的详细数据
-    const returnedCards = await prisma.card.findMany({
-      where: { id: { in: resultCards } }
-    });
-    return res.status(200).json({ success: false, user: userData, resultCards: returnedCards });
+  } catch (error) {
+    console.error('Craft error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }
