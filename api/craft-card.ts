@@ -103,18 +103,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Craft success rate:', successRate.toString());
   const randomNumber = new BigNumber(Math.random())
   console.log('randomNumber', randomNumber.toString())
+  // 删除所有消耗的卡牌
+  const deleteIds = [
+    ...requiredCards.map(userCard => userCard.id),
+    ...additiveCards.map(userCard => userCard.id)
+  ];
+  console.log('deleteIds', deleteIds);
+  const {count} = await prisma.userCard.deleteMany({
+    where: {
+      id: { in: deleteIds }
+    }
+  });
+  console.log('Deleted user cards count:', count);
   try {
     if (randomNumber.isLessThanOrEqualTo(successRate)) {
-      // 合成成功：删除消耗的卡牌，添加新卡牌
-      const deleteIds = [
-        ...requiredCards.map(userCard => userCard.id),
-        ...additiveCards.map(userCard => userCard.id)
-      ];
-      await prisma.userCard.deleteMany({
-        where: {
-          id: { in: deleteIds }
-        }
-      });
       await prisma.userCard.create({
         data: {
           userId: user.id,
@@ -128,22 +130,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const randomRequiredCardIndex = Math.floor(Math.random() * requiredCards.length);
       const returnRequiredCard = requiredCards[randomRequiredCardIndex];
       const resultCards: number[] = [returnRequiredCard.cardId];
+      console.log('returnRequiredCard', returnRequiredCard.cardId);
       // 可选：随机返还一张 additiveCards 中的卡
       if (additiveCards.length > 0) {
         const randomAdditiveCardIndex = Math.floor(Math.random() * additiveCards.length);
         const returnAdditiveCard = additiveCards[randomAdditiveCardIndex];
+        console.log('returnAdditiveCard', returnAdditiveCard.cardId);
         resultCards.push(returnAdditiveCard.cardId);
       }
-      // 删除所有消耗的卡牌
-      const deleteIds = [
-        ...requiredCards.map(userCard => userCard.id),
-        ...additiveCards.map(userCard => userCard.id)
-      ];
-      await prisma.userCard.deleteMany({
-        where: {
-          id: { in: deleteIds }
-        }
-      });
       // 返还 resultCards 到用户背包
       await Promise.all(resultCards.map(cardId =>
         prisma.userCard.create({
