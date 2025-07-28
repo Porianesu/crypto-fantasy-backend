@@ -8,6 +8,7 @@ import {BigNumber} from "bignumber.js";
 const prisma = new PrismaClient();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const start = Date.now();
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -125,6 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           cardId: craftCard.id
         }
       });
+      console.log('合成成功接口执行耗时(ms):', Date.now() - start);
       return res.status(200).json({ success: true, user: userData, resultCards: [craftCard] });
     } else {
       // 合成失败逻辑：按规则返还部分消耗卡牌
@@ -158,6 +160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const returnedCards = await prisma.card.findMany({
         where: { id: { in: resultCards } }
       });
+      console.log('合成失败接口执行耗时(ms):', Date.now() - start);
       return res.status(200).json({ success: false, user: userData, resultCards: returnedCards });
     }
   } catch (error) {
