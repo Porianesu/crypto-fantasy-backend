@@ -57,6 +57,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     where: {
       userId: user.id,
       card: {
+        id: craftCardId - 1,
         rarity: craftConfig.requiredCards.rarity,
       }
     }
