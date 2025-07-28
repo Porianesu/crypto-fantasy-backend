@@ -53,6 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Insufficient faith coin!' });
   }
 
+  // 查找用户拥有的 requiredCards必须是同链的下一级稀有度的卡
   const availableRequiredCards = await prisma.userCard.findMany({
     where: {
       userId: user.id,
@@ -135,9 +136,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // 可选：随机返还一张 additiveCards 中的卡
       if (additiveCards.length > 0) {
         const randomAdditiveCardIndex = Math.floor(Math.random() * additiveCards.length);
-        const returnAdditiveCard = additiveCards[randomAdditiveCardIndex];
-        console.log('returnAdditiveCard', returnAdditiveCard.cardId);
-        resultCards.push(returnAdditiveCard.cardId);
+        const targetAdditiveCard = additiveCards[randomAdditiveCardIndex];
+        const returnAdditiveCard = await prisma.card.findFirst({
+          where: { id: targetAdditiveCard.card.rarity === 0 ? targetAdditiveCard.cardId : targetAdditiveCard.cardId - 1 }
+        })
+        if (!returnAdditiveCard) {
+          return res.status(404).json({ error: 'Return additive card not found' });
+        }
+        console.log('returnAdditiveCard', returnAdditiveCard.id);
+        resultCards.push(returnAdditiveCard.id);
       }
       // 返还 resultCards 到用户背包
       await Promise.all(resultCards.map(cardId =>
