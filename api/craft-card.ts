@@ -87,23 +87,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let additiveCards: (UserCard & { card: Card })[] = [];
   if (additiveCardIds && Array.isArray(additiveCardIds) && additiveCardIds.length > 0) {
     const usedUserCardIds = new Set(requiredCards.map(userCard => userCard.id)); // 这里应该是 userCard 的 id
-    for (const cardId of additiveCardIds) {
-      // 查找用户拥有的、cardId匹配且未被requiredCards使用的任意一张卡
-      const found = await prisma.userCard.findFirst({
+    const additivePromises = additiveCardIds.map(cardId =>
+      prisma.userCard.findFirst({
         where: {
           userId: user.id,
           cardId: cardId,
           NOT: {id: {in: Array.from(usedUserCardIds)}}
         },
-        include: {
-          card: true, // 包含卡牌信息
-        }
-      });
+        include: { card: true }
+      })
+    );
+    const foundCards = await Promise.all(additivePromises);
+    for (const found of foundCards) {
       if (!found) {
-        return res.status(400).json({error: `Additive card ${cardId} not found!`});
+        return res.status(400).json({error: 'Additive card not found!'});
       }
       additiveCards.push(found);
-      usedUserCardIds.add(found.id); // 防止重复使用
+      usedUserCardIds.add(found.id);
     }
   }
   timeCheckpoints['afterFindAdditiveCards'] = Date.now();
@@ -175,14 +175,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         resultCards.push(returnAdditiveCard.id);
       }
       // 返还 resultCards 到用户背包
-      await Promise.all(resultCards.map(cardId =>
-        prisma.userCard.create({
-          data: {
-            userId: user.id,
-            cardId: cardId
-          }
-        })
-      ));
+      await prisma.userCard.createMany({
+        data: resultCards.map(cardId => ({
+          userId: user.id,
+          cardId: cardId
+        }))
+      });
       const returnedCards = await prisma.card.findMany({
         where: { id: { in: resultCards } }
       });
