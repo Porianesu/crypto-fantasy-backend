@@ -32,6 +32,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const {craftCardId, additiveCardIds} = req.body;
+  if (!craftCardId || typeof craftCardId !== 'number' || (additiveCardIds && !Array.isArray(additiveCardIds))) {
+    return res.status(400).json({error: 'Invalid request body. craftCardId must be a number and additiveCardIds must be an array.'});
+  }
 
   // 查询卡牌稀有度
   const craftCard = await prisma.card.findUnique({where: {id: craftCardId}});
