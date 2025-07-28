@@ -31,10 +31,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({error: 'User not found'});
   }
 
-  const {carfCardId, additiveCardIds} = req.body;
+  const {craftCardId, additiveCardIds} = req.body;
 
   // 查询卡牌稀有度
-  const craftCard = await prisma.card.findUnique({where: {id: carfCardId}});
+  const craftCard = await prisma.card.findUnique({where: {id: craftCardId}});
   if (!craftCard) {
     return res.status(404).json({error: 'Card not found'});
   }
