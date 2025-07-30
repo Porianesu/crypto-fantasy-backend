@@ -1,77 +1,76 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import { PrismaClient } from '@prisma/client';
-import { verifyToken } from './utils/jwt';
-import { MeltRule } from './utils/config';
+import { VercelRequest, VercelResponse } from '@vercel/node'
+import { PrismaClient } from '@prisma/client'
+import { verifyToken } from './utils/jwt'
+import { MeltRule } from './utils/config'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(200).end()
   }
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' })
   }
 
   // 校验token
-  const email = verifyToken(req);
+  const email = verifyToken(req)
   if (!email) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized' })
   }
 
   // 通过 email 查询 userId
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { email } })
   if (!user) {
-    return res.status(401).json({ error: 'User not found' });
+    return res.status(401).json({ error: 'User not found' })
   }
-  const userId = user.id;
+  const userId = user.id
   if (user.meltCurrent <= 0) {
-    return res.status(403).json({error: 'Melt limit reached, please try again later'});
+    return res.status(403).json({ error: 'Melt limit reached, please try again later' })
   }
 
-  const { cardId } = req.body;
-  const parsedCardId = Number(cardId);
-  if (
-    cardId === undefined || cardId === null || isNaN(parsedCardId) || parsedCardId < 0
-  ) {
-    return res.status(400).json({ error: 'Invalid cardId, must be a positive integer' });
+  const { cardId } = req.body
+  const parsedCardId = Number(cardId)
+  if (cardId === undefined || cardId === null || isNaN(parsedCardId) || parsedCardId < 0) {
+    return res.status(400).json({ error: 'Invalid cardId, must be a positive integer' })
   }
 
   // 查询用户是否拥有该卡
-  const userCard = await prisma.userCard.findFirst({ where: { userId, cardId: parsedCardId } });
+  const userCard = await prisma.userCard.findFirst({ where: { userId, cardId: parsedCardId } })
   if (!userCard) {
-    return res.status(404).json({ error: 'Card not found in user inventory' });
+    return res.status(404).json({ error: 'Card not found in user inventory' })
   }
 
   // 查询卡牌稀有度
-  const card = await prisma.card.findUnique({ where: { id: parsedCardId } });
+  const card = await prisma.card.findUnique({ where: { id: parsedCardId } })
   if (!card) {
-    return res.status(404).json({ error: 'Card not found' });
+    return res.status(404).json({ error: 'Card not found' })
   }
 
   // 查找返还的faithCoin
-  const meltConfig = MeltRule.find(r => r.rarity === card.rarity);
+  const meltConfig = MeltRule.find((r) => r.rarity === card.rarity)
   if (!meltConfig) {
-    return res.status(500).json({ error: 'Melt config not found' });
+    return res.status(500).json({ error: 'Melt config not found' })
   }
 
   // 删除用户卡牌
-  await prisma.userCard.delete({ where: { id: userCard.id } });
+  await prisma.userCard.delete({ where: { id: userCard.id } })
   // 增加用户faithAmount
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
       faithAmount: { increment: meltConfig.faithCoin },
-      meltCurrent: { decrement: 1 }
+      meltCurrent: { decrement: 1 },
     },
-  });
+  })
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userData } = updatedUser
 
   return res.status(200).json({
     user: userData,
-  });
+  })
 }
