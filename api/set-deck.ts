@@ -73,5 +73,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       deckPower,
     },
   })
-  return res.status(200).json({ success: true })
+  res.status(200).json({ success: true, deckCards, deckPower })
 }
