@@ -51,6 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
       }
     } catch (error) {
+      console.log(error)
       return res.status(500).json({ error: 'Failed to fetch card(s)' })
     }
   } else {
