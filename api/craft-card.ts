@@ -20,21 +20,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({error: 'Method Not Allowed'});
   }
 
-  const timeCheckpoints: Record<string, number> = {};
-  timeCheckpoints['start'] = Date.now();
-
-  // 校验token
-  timeCheckpoints['beforeVerifyToken'] = Date.now();
   const email = verifyToken(req);
-  timeCheckpoints['afterVerifyToken'] = Date.now();
   if (!email) {
     return res.status(401).json({error: 'Unauthorized'});
   }
 
   // 通过 email 查询 userId
-  timeCheckpoints['beforeFindUser'] = Date.now();
   const user = await prisma.user.findUnique({where: {email}});
-  timeCheckpoints['afterFindUser'] = Date.now();
   if (!user) {
     return res.status(401).json({error: 'User not found'});
   }
@@ -45,9 +37,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // 查询卡牌稀有度
-  timeCheckpoints['beforeFindCard'] = Date.now();
   const craftCard = await prisma.card.findUnique({where: {id: craftCardId}});
-  timeCheckpoints['afterFindCard'] = Date.now();
   if (!craftCard) {
     return res.status(404).json({error: 'Card not found'});
   }
@@ -63,7 +53,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // 查找用户拥有的 requiredCards必须是同链的下一级稀有度的卡
-  timeCheckpoints['beforeFindRequiredCards'] = Date.now();
   const availableRequiredCards = await prisma.userCard.findMany({
     where: {
       userId: user.id,
@@ -73,7 +62,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
   });
-  timeCheckpoints['afterFindRequiredCards'] = Date.now();
   // 找出满足条件的卡牌
   const requiredCount = craftConfig.requiredCards.count;
   if (availableRequiredCards.length < requiredCount) {
@@ -83,7 +71,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requiredCards = availableRequiredCards.slice(0, requiredCount);
 
   // 查找 additiveCards
-  timeCheckpoints['beforeFindAdditiveCards'] = Date.now();
   let additiveCards: (UserCard & { card: Card })[] = [];
   if (additiveCardIds && Array.isArray(additiveCardIds) && additiveCardIds.length > 0) {
     const usedUserCardIds = new Set(requiredCards.map(userCard => userCard.id)); // 这里应该是 userCard 的 id
@@ -106,23 +93,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       usedUserCardIds.add(found.id);
     }
   }
-  timeCheckpoints['afterFindAdditiveCards'] = Date.now();
 
   // 扣除 faithAmount（推荐使用 decrement 保证并发安全）
-  timeCheckpoints['beforeUpdateUser'] = Date.now();
   const { password, ...userData } = await prisma.user.update({
     where: { id: user.id },
     data: { faithAmount: { decrement: craftConfig.requiredFaithCoin } }
   });
-  timeCheckpoints['afterUpdateUser'] = Date.now();
 
   const successRate = successRateCalculate(craftConfig, craftCard, additiveCards.map(card => card.card));
-  console.log('Craft success rate:', successRate.toString());
   const randomNumber = new BigNumber(Math.random())
-  console.log('randomNumber', randomNumber.toString())
   // 删除所有消耗的卡牌
-  timeCheckpoints['beforeDeleteUserCards'] = Date.now();
-  const deleteResult = await prisma.userCard.deleteMany({
+  await prisma.userCard.deleteMany({
     where: {
       id: { in: [
         ...requiredCards.map(userCard => userCard.id),
@@ -130,28 +111,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ] }
     }
   });
-  timeCheckpoints['afterDeleteUserCards'] = Date.now();
-  console.log('Deleted user cards count:', deleteResult.count);
   try {
-    timeCheckpoints['beforeResultReturn'] = Date.now();
     if (randomNumber.isLessThanOrEqualTo(successRate)) {
       await prisma.userCard.create({
         data: {
           userId: user.id,
           cardId: craftCard.id
         }
-      });
-      timeCheckpoints['afterCreateResultCard'] = Date.now();
-      console.log('接口各步骤耗时(ms):', {
-        verifyToken: timeCheckpoints['afterVerifyToken'] - timeCheckpoints['beforeVerifyToken'],
-        findUser: timeCheckpoints['afterFindUser'] - timeCheckpoints['beforeFindUser'],
-        findCard: timeCheckpoints['afterFindCard'] - timeCheckpoints['beforeFindCard'],
-        findRequiredCards: timeCheckpoints['afterFindRequiredCards'] - timeCheckpoints['beforeFindRequiredCards'],
-        findAdditiveCards: timeCheckpoints['afterFindAdditiveCards'] - timeCheckpoints['beforeFindAdditiveCards'],
-        updateUser: timeCheckpoints['afterUpdateUser'] - timeCheckpoints['beforeUpdateUser'],
-        deleteUserCards: timeCheckpoints['afterDeleteUserCards'] - timeCheckpoints['beforeDeleteUserCards'],
-        createResultCard: timeCheckpoints['afterCreateResultCard'] - timeCheckpoints['beforeResultReturn'],
-        total: Date.now() - timeCheckpoints['start']
       });
       return res.status(200).json({ success: true, user: userData, resultCards: [craftCard] });
     } else {
@@ -183,18 +149,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
       const returnedCards = await prisma.card.findMany({
         where: { id: { in: resultCards } }
-      });
-      timeCheckpoints['afterFailLogic'] = Date.now();
-      console.log('接口各步骤耗时(ms):', {
-        verifyToken: timeCheckpoints['afterVerifyToken'] - timeCheckpoints['beforeVerifyToken'],
-        findUser: timeCheckpoints['afterFindUser'] - timeCheckpoints['beforeFindUser'],
-        findCard: timeCheckpoints['afterFindCard'] - timeCheckpoints['beforeFindCard'],
-        findRequiredCards: timeCheckpoints['afterFindRequiredCards'] - timeCheckpoints['beforeFindRequiredCards'],
-        findAdditiveCards: timeCheckpoints['afterFindAdditiveCards'] - timeCheckpoints['beforeFindAdditiveCards'],
-        updateUser: timeCheckpoints['afterUpdateUser'] - timeCheckpoints['beforeUpdateUser'],
-        deleteUserCards: timeCheckpoints['afterDeleteUserCards'] - timeCheckpoints['beforeDeleteUserCards'],
-        failLogic: timeCheckpoints['afterFailLogic'] - timeCheckpoints['beforeResultReturn'],
-        total: Date.now() - timeCheckpoints['start']
       });
       return res.status(200).json({ success: false, user: userData, resultCards: returnedCards });
     }
