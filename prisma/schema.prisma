@@ -25,6 +25,7 @@ model User {
   meltMax             Int        @default(0)
   cardsOwned          UserCard[] @relation("UserCardsOwned")
   deckCardIds         Int[] // 新增字段，存储卡组用到的 Card id，顺序即为卡组顺序
+  deckCards           Json       @default("[]") // 存储 [{ cardId: Int, userCardId: Int }]，顺序即为卡组顺序
   deckPower           Int        @default(0) // 新增字段，存储卡组总战力
 }
 
