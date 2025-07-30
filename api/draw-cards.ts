@@ -1,81 +1,97 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import { PrismaClient } from '@prisma/client';
-import BigNumber from 'bignumber.js';
-import { verifyToken } from './utils/jwt';
+import { VercelRequest, VercelResponse } from '@vercel/node'
+import { PrismaClient } from '@prisma/client'
+import BigNumber from 'bignumber.js'
+import { verifyToken } from './utils/jwt'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
 
   if (req.method === 'OPTIONS') {
-    return res.status(204).end();
+    return res.status(204).end()
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' })
   }
 
   // 校验token
-  const email = verifyToken(req);
+  const email = verifyToken(req)
   if (!email) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized' })
   }
 
   // 查询用户
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { email } })
   if (!user) {
-    return res.status(404).json({ error: 'User not found' });
+    return res.status(404).json({ error: 'User not found' })
   }
 
   // 查询所有卡牌
   const cardsData = await prisma.card.findMany({
-    orderBy: { id: 'asc' } // 确保卡牌按id顺序
-  });
+    orderBy: { id: 'asc' }, // 确保卡牌按id顺序
+  })
   if (!cardsData || cardsData.length === 0) {
-    return res.status(500).json({ error: 'No card data found' });
+    return res.status(500).json({ error: 'No card data found' })
   }
 
   // 使用BigNumber进行余额比较
-  const solAmountBN = new BigNumber(user.solAmount);
-  const costBN = new BigNumber(0.1);
+  const solAmountBN = new BigNumber(user.solAmount)
+  const costBN = new BigNumber(0.1)
   if (solAmountBN.lt(costBN)) {
-    return res.status(400).json({ error: 'Insufficient Balance!' });
+    return res.status(400).json({ error: 'Insufficient Balance!' })
   }
   // 分组，每4张为一个类型
-  const cardTypeCount = Math.floor(cardsData.length / 4);
-  const availableIndexes = Array.from({ length: cardTypeCount }, (_, i) => i);
+  const cardTypeCount = Math.floor(cardsData.length / 4)
+  const availableIndexes = Array.from({ length: cardTypeCount }, (_, i) => i)
   // 洗牌
   for (let i = availableIndexes.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [availableIndexes[i], availableIndexes[j]] = [availableIndexes[j], availableIndexes[i]];
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[availableIndexes[i], availableIndexes[j]] = [availableIndexes[j], availableIndexes[i]]
   }
   // 抽5张卡
-  const drawCardsCount = 5;
-  const selectedIndexes = availableIndexes.slice(0, drawCardsCount);
+  const drawCardsCount = 5
+  const selectedIndexes = availableIndexes.slice(0, drawCardsCount)
   const resultCards = selectedIndexes.map((cardTypeIndex) => {
-    const baseIndex = cardTypeIndex * 4;
-    const cardRaritySeed = Math.random();
+    const baseIndex = cardTypeIndex * 4
+    const cardRaritySeed = Math.random()
     if (cardRaritySeed >= 0.995) {
-      return cardsData[baseIndex + 3]; // SSR
+      return cardsData[baseIndex + 3] // SSR
     } else if (cardRaritySeed >= 0.95) {
-      return cardsData[baseIndex + 2]; // SR
+      return cardsData[baseIndex + 2] // SR
     } else if (cardRaritySeed >= 0.75) {
-      return cardsData[baseIndex + 1]; // R
+      return cardsData[baseIndex + 1] // R
     } else {
-      return cardsData[baseIndex]; // N
+      return cardsData[baseIndex] // N
     }
-  });
+  })
 
-  const newSolAmount = solAmountBN.minus(costBN).toNumber();
-
-  // 批量插入UserCard
-  const userId = user.id;
+  const newSolAmount = solAmountBN.minus(costBN).toNumber()
+  const now = new Date()
+  const userId = user.id
+  // 批量插入UserCard，记录obtainedAt
   await prisma.userCard.createMany({
-    data: resultCards.map(card => ({ userId, cardId: card.id })),
-  });
+    data: resultCards.map((card) => ({ userId, cardId: card.id, obtainedAt: now })),
+  })
+
+  // 查询本次新获得的userCard
+  const newUserCards = await prisma.userCard.findMany({
+    where: {
+      userId,
+      obtainedAt: { gte: now },
+      cardId: { in: resultCards.map((card) => card.id) },
+    },
+    include: { card: true },
+  })
+
+  // 合并userCardId到resultCards
+  const cardsWithUserCardId = newUserCards.map((item) => ({
+    ...item.card,
+    userCardId: item.id,
+  }))
 
   // 更新用户余额
   const updatedUser = await prisma.user.update({
@@ -83,9 +99,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     data: {
       solAmount: newSolAmount,
     },
-  });
+  })
 
   // 不返回密码
-  const { password, ...userData } = updatedUser;
-  res.status(200).json({ cards: resultCards, user: userData });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password, ...userData } = updatedUser
+  res.status(200).json({ cards: cardsWithUserCardId, user: userData })
 }
