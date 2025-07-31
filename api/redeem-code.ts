@@ -43,11 +43,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (redemptionCode.expiredAt && new Date() > redemptionCode.expiredAt) {
     return res.status(400).json({ error: 'Code expired' })
   }
+  if (redemptionCode.records.some((r) => r.userId === user.id)) {
+    return res.status(400).json({ error: 'You have already redeemed this code' })
+  }
   if (redemptionCode.maxUses && redemptionCode.records.length >= redemptionCode.maxUses) {
     return res.status(400).json({ error: 'Code usage limit reached' })
-  }
-  if (redemptionCode.records.some((r) => r.userId === user.id)) {
-    return res.status(400).json({ error: 'Already redeemed by this user' })
   }
 
   // 发放资源
