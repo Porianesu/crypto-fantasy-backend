@@ -1,5 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { Card, PrismaClient, UserCard } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import { verifyToken } from './utils/jwt'
 import { CraftRule } from './utils/config'
 import { successRateCalculate } from './utils/common'
@@ -31,15 +31,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'User not found' })
   }
 
-  const { craftCardId, additiveCardIds } = req.body
+  const { craftCardId, requiredUserCardIds, additiveUserCardIds } = req.body
   if (
     !craftCardId ||
     typeof craftCardId !== 'number' ||
-    (additiveCardIds && !Array.isArray(additiveCardIds))
+    !requiredUserCardIds ||
+    !Array.isArray(requiredUserCardIds) ||
+    (additiveUserCardIds && !Array.isArray(additiveUserCardIds))
   ) {
     return res.status(400).json({
       error:
-        'Invalid request body. craftCardId must be a number and additiveCardIds must be an array.',
+        'Invalid request body. craftCardId must be a number, requiredUserCardIds and additiveUserCardIds must be arrays.',
     })
   }
 
@@ -59,49 +61,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Insufficient faith coin!' })
   }
 
-  // 查找用户拥有的 requiredCards必须是同链的下一级稀有度的卡
-  const availableRequiredCards = await prisma.userCard.findMany({
+  // 查找用户拥有的 requiredCards
+  const requiredCards = await prisma.userCard.findMany({
     where: {
+      id: { in: requiredUserCardIds },
       userId: user.id,
-      card: {
-        id: craftCardId - 1,
-        rarity: craftConfig.requiredCards.rarity,
-      },
     },
+    include: { card: true },
   })
-  // 找出满足条件的卡牌
-  const requiredCount = craftConfig.requiredCards.count
-  if (availableRequiredCards.length < requiredCount) {
+  if (requiredCards.length < craftConfig.requiredCards.count) {
     return res.status(400).json({ error: 'Required cards not enough!' })
   }
-  // 取出前 requiredCount 张卡牌
-  const requiredCards = availableRequiredCards.slice(0, requiredCount)
 
   // 查找 additiveCards
-  const additiveCards: (UserCard & { card: Card })[] = []
-  if (additiveCardIds && Array.isArray(additiveCardIds) && additiveCardIds.length > 0) {
-    const usedUserCardIds = new Set(requiredCards.map((userCard) => userCard.id)) // 这里应该是 userCard 的 id
-    const additivePromises = additiveCardIds.map((cardId) =>
-      prisma.userCard.findFirst({
-        where: {
-          userId: user.id,
-          cardId: cardId,
-          NOT: { id: { in: Array.from(usedUserCardIds) } },
-        },
-        include: { card: true },
-      }),
-    )
-    const foundCards = await Promise.all(additivePromises)
-    for (const found of foundCards) {
-      if (!found) {
-        return res.status(400).json({ error: 'Additive card not found!' })
-      }
-      additiveCards.push(found)
-      usedUserCardIds.add(found.id)
-    }
+  const additiveCards = await prisma.userCard.findMany({
+    where: {
+      id: { in: additiveUserCardIds },
+      userId: user.id,
+    },
+    include: { card: true },
+  })
+  if (additiveCards.length < additiveUserCardIds.length) {
+    return res.status(400).json({ error: "Additive cards doesn't match" })
   }
 
-  // 扣除 faithAmount（推荐使用 decrement 保证并发安全）
+  // faithAmount 扣款
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userData } = await prisma.user.update({
     where: { id: user.id },
@@ -149,7 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // 随机返还一张 requiredCards 中的卡
       const randomRequiredCardIndex = Math.floor(Math.random() * requiredCards.length)
       const returnRequiredCard = requiredCards[randomRequiredCardIndex]
-      const resultCards: number[] = [returnRequiredCard.cardId]
+      const resultCards: Array<number> = [returnRequiredCard.cardId]
       // 可选：随机返还一张 additiveCards 中的卡
       if (additiveCards.length > 0) {
         const randomAdditiveCardIndex = Math.floor(Math.random() * additiveCards.length)
@@ -175,7 +159,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           cardId: cardId,
         })),
       })
-
       // 查询本次新获得的userCard
       const newUserCards = await prisma.userCard.findMany({
         where: {
