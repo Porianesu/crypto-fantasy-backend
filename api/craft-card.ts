@@ -11,10 +11,7 @@ const isRequiredCardValid = (targetCard: Card, requiredCard: Card, ruleConfig: I
   if (requiredCard.id + 1 !== targetCard.id) {
     return false
   }
-  if (requiredCard.rarity !== ruleConfig.requiredCards.rarity) {
-    return false
-  }
-  return true
+  return requiredCard.rarity === ruleConfig.requiredCards.rarity
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -35,12 +32,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  // 通过 email 查询 userId
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) {
-    return res.status(401).json({ error: 'User not found' })
-  }
-
   const { craftCardId, requiredUserCardIds, additiveUserCardIds } = req.body
   if (
     !craftCardId ||
@@ -53,6 +44,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error:
         'Invalid request body. craftCardId must be a number, requiredUserCardIds and additiveUserCardIds must be arrays.',
     })
+  }
+
+  // 通过 email 查询 userId
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user) {
+    return res.status(401).json({ error: 'User not found' })
+  }
+  // 校验 deckCards 是否有冲突
+  if (user.deckCards && Array.isArray(user.deckCards)) {
+    // deckCards: [{ cardId, userCardId }, ...]
+    const deckUserCardIdsSet = new Set(
+      user.deckCards.map((item) => (item as { cardId: number; userCardId: number }).userCardId),
+    )
+    const conflictRequired = requiredUserCardIds.some((id: number) => deckUserCardIdsSet.has(id))
+    const conflictAdditive =
+      additiveUserCardIds && additiveUserCardIds.some((id: number) => deckUserCardIdsSet.has(id))
+    if (conflictRequired || conflictAdditive) {
+      return res
+        .status(400)
+        .json({ error: 'Some cards is in your deck, please remove them first.' })
+    }
   }
 
   // 查询卡牌稀有度

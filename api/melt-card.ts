@@ -42,6 +42,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ) {
     return res.status(400).json({ error: 'Invalid userCardId, must be a positive integer' })
   }
+  // 校验 deckCards 是否有冲突
+  if (user.deckCards && Array.isArray(user.deckCards)) {
+    // deckCards: [{ cardId, userCardId }, ...]
+    const deckUserCardIdsSet = new Set(
+      user.deckCards.map((item) => (item as { cardId: number; userCardId: number }).userCardId),
+    )
+    if (deckUserCardIdsSet.has(userCardId)) {
+      return res.status(400).json({ error: 'This card is in your deck, please remove them first.' })
+    }
+  }
 
   // 查询用户卡牌
   const userCard = await prisma.userCard.findUnique({
