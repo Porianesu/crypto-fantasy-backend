@@ -51,6 +51,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     include: { card: true },
   })
   if (userCards.length !== deckCards.length) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        deckCards: [],
+        deckPower: 0,
+      },
+    })
     return res.status(400).json({ error: 'Some userCardId does not belong to user' })
   }
   // 校验 cardId 是否匹配
