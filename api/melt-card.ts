@@ -32,26 +32,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Melt limit reached, please try again later' })
   }
 
-  const { cardId } = req.body
-  const parsedCardId = Number(cardId)
-  if (cardId === undefined || cardId === null || isNaN(parsedCardId) || parsedCardId < 0) {
-    return res.status(400).json({ error: 'Invalid cardId, must be a positive integer' })
+  const { userCardId } = req.body
+  const parsedUserCardId = Number(userCardId)
+  if (
+    userCardId === undefined ||
+    userCardId === null ||
+    isNaN(parsedUserCardId) ||
+    parsedUserCardId < 0
+  ) {
+    return res.status(400).json({ error: 'Invalid userCardId, must be a positive integer' })
   }
 
-  // 查询用户是否拥有该卡
-  const userCard = await prisma.userCard.findFirst({ where: { userId, cardId: parsedCardId } })
-  if (!userCard) {
+  // 查询用户卡牌
+  const userCard = await prisma.userCard.findUnique({
+    where: { id: parsedUserCardId },
+    include: { card: true },
+  })
+  if (!userCard || userCard.userId !== userId) {
     return res.status(404).json({ error: 'Card not found in user inventory' })
   }
 
-  // 查询卡牌稀有度
-  const card = await prisma.card.findUnique({ where: { id: parsedCardId } })
-  if (!card) {
-    return res.status(404).json({ error: 'Card not found' })
-  }
-
   // 查找返还的faithCoin
-  const meltConfig = MeltRule.find((r) => r.rarity === card.rarity)
+  const meltConfig = MeltRule.find((r) => r.rarity === userCard.card.rarity)
   if (!meltConfig) {
     return res.status(500).json({ error: 'Melt config not found' })
   }
