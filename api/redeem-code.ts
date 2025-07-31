@@ -66,5 +66,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     },
   })
 
-  return res.status(200).json({ success: true, resources: updateData })
+  return res.status(200).json({
+    success: true,
+    reward: {
+      solAmount: redemptionCode.solAmount,
+      faithAmount: redemptionCode.faithAmount,
+    },
+  })
 }
