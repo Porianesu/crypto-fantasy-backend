@@ -11,21 +11,22 @@ datasource db {
 }
 
 model User {
-  id                  Int        @id @default(autoincrement())
-  email               String     @unique
+  id                  Int                @id @default(autoincrement())
+  email               String             @unique
   password            String
   avatar              String?
-  solAmount           Float      @default(0)
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
-  hasAlreadyReadGuide Boolean    @default(false)
-  faithAmount         Float      @default(0)
-  expPercent          Float      @default(0)
-  meltCurrent         Int        @default(0)
-  meltMax             Int        @default(0)
-  cardsOwned          UserCard[] @relation("UserCardsOwned")
-  deckCards           Json       @default("[]") // 存储 [{ cardId: Int, userCardId: Int }]，顺序即为卡组顺序
-  deckPower           Int        @default(0) // 新增字段，存储卡组总战力
+  solAmount           Float              @default(0)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  hasAlreadyReadGuide Boolean            @default(false)
+  faithAmount         Float              @default(0)
+  expPercent          Float              @default(0)
+  meltCurrent         Int                @default(0)
+  meltMax             Int                @default(0)
+  cardsOwned          UserCard[]         @relation("UserCardsOwned")
+  deckCards           Json               @default("[]") // 存储 [{ cardId: Int, userCardId: Int }]，顺序即为卡组顺序
+  deckPower           Int                @default(0) // 新增字段，存储卡组总战力
+  RedemptionRecord    RedemptionRecord[]
 }
 
 model Card {
@@ -61,4 +62,24 @@ model UserCard {
   card       Card     @relation("UserCardsOwned", fields: [cardId], references: [id])
   cardId     Int
   obtainedAt DateTime @default(now())
+}
+
+model RedemptionCode {
+  id          Int                @id @default(autoincrement())
+  code        String             @unique
+  solAmount   Float              @default(0)
+  faithAmount Float              @default(0)
+  maxUses     Int                @default(1)
+  createdAt   DateTime           @default(now())
+  expiredAt   DateTime?
+  records     RedemptionRecord[]
+}
+
+model RedemptionRecord {
+  id         Int            @id @default(autoincrement())
+  user       User           @relation(fields: [userId], references: [id])
+  userId     Int
+  code       RedemptionCode @relation(fields: [codeId], references: [id])
+  codeId     Int
+  redeemedAt DateTime       @default(now())
 }
