@@ -1,0 +1,32 @@
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+async function main() {
+  // 手动配置兑换码参数
+  const code = 'CF2025TEST' // 兑换码字符串
+  const solAmount = 100 // 兑换的 sol 数量
+  const faithAmount = 50 // 兑换的 faith 数量
+  const maxUses = 1 // 最大可兑换次数
+  const expiredAt = new Date('2025-12-31T23:59:59Z') // 过期时间
+
+  const redemptionCode = await prisma.redemptionCode.create({
+    data: {
+      code,
+      solAmount,
+      faithAmount,
+      maxUses,
+      expiredAt,
+    },
+  })
+
+  console.log('兑换码已创建:', redemptionCode)
+}
+
+main()
+  .catch((e) => {
+    console.error(e)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
