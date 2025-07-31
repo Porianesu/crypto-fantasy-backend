@@ -25,17 +25,17 @@ export const MeltRule = [
 ]
 
 export interface ICraftRule {
-  targetRarity: CARD_RARITY;
+  targetRarity: CARD_RARITY
   requiredCards: {
-    rarity: CARD_RARITY;
-    count: number;
-  };
-  requiredFaithCoin: number;
-  baseSuccessRate: number; // 基础成功率
-  maxSuccessRate: number; // 最大成功率
+    rarity: CARD_RARITY
+    count: number
+  }
+  requiredFaithCoin: number
+  baseSuccessRate: number // 基础成功率
+  maxSuccessRate: number // 最大成功率
 }
 
-export const CraftRule:Array<ICraftRule> = [
+export const CraftRule: Array<ICraftRule> = [
   {
     targetRarity: CARD_RARITY.RARE,
     requiredCards: {
