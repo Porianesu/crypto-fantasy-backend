@@ -1,3 +1,10 @@
+export const DefaultAvatars = [
+  'https://fantasy.defed.network/defaultAvatars/player_female_1.png',
+  'https://fantasy.defed.network/defaultAvatars/player_female_2.png',
+  'https://fantasy.defed.network/defaultAvatars/player_male_1.png',
+  'https://fantasy.defed.network/defaultAvatars/player_male_2.png',
+]
+
 export enum CARD_RARITY {
   NORMAL = 0,
   RARE = 1,
