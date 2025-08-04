@@ -27,6 +27,7 @@ model User {
   deckCards           Json               @default("[]") // 存储 [{ cardId: Int, userCardId: Int }]，顺序即为卡组顺序
   deckPower           Int                @default(0) // 新增字段，存储卡组总战力
   RedemptionRecord    RedemptionRecord[]
+  nickname            String             @unique // 改为必填字段，唯一
 }
 
 model Card {
