@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     take: 50,
     select: {
       id: true,
-      email: true,
+      nickname: true,
       avatar: true,
       deckPower: true,
     },
