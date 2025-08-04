@@ -139,6 +139,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(409).json({ error: 'Nickname already exists' })
         }
       }
+      if (avatar && !DefaultAvatars.includes(avatar)) {
+        return res.status(400).json({ error: 'Invalid avatar' })
+      }
       // 更新用户信息
       const updatedUser = await prisma.user.update({
         where: { email },
