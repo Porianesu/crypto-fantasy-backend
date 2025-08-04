@@ -54,7 +54,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // 批量生成昵称
           const candidates = Array.from(
             { length: batchSize },
-            () => `Adventure_#${Math.floor(1000 + Math.random() * 9000)}`,
+            () => `Adventure_#${Math.floor(10000 + Math.random() * 90000)}`,
           )
           // 查询已存在的昵称
           const existNicknames = await prisma.user.findMany({
