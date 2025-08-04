@@ -131,6 +131,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       // 检查 nickname 是否重复
       if (nickname) {
+        if (nickname.length < 2 || nickname.length > 20) {
+          return res.status(400).json({ error: 'Nickname must be 2-20 characters' })
+        }
         const exist = await prisma.user.findFirst({ where: { nickname, email: { not: email } } })
         if (exist) {
           return res.status(409).json({ error: 'Nickname already exists' })
