@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { signToken } from './utils/jwt'
+import { signToken, verifyToken } from './utils/jwt'
 import { DefaultAvatars } from './utils/config'
 
 const prisma = new PrismaClient()
@@ -117,6 +117,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (error) {
       console.log('get users error', error)
       res.status(500).json({ error: 'Operation failed' })
+    }
+  } else if (req.method === 'PATCH') {
+    try {
+      const { nickname, avatar } = req.body
+      if (!nickname && !avatar) {
+        return res.status(400).json({ error: 'Invalid request body' })
+      }
+      // 校验 token
+      const email = verifyToken(req)
+      if (!email) {
+        return res.status(401).json({ error: 'Unauthorized' })
+      }
+      // 检查 nickname 是否重复
+      if (nickname) {
+        const exist = await prisma.user.findFirst({ where: { nickname, email: { not: email } } })
+        if (exist) {
+          return res.status(409).json({ error: 'Nickname already exists' })
+        }
+      }
+      // 更新用户信息
+      const updatedUser = await prisma.user.update({
+        where: { email },
+        data: {
+          ...(nickname ? { nickname } : {}),
+          ...(avatar ? { avatar } : {}),
+        },
+      })
+      // 去除 password 字段
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userData } = updatedUser
+      res.status(200).json({ user: userData })
+    } catch (error) {
+      console.log('update user error', error)
+      res.status(500).json({ error: 'Something went wrong' })
     }
   } else {
     res.status(405).json({ error: 'Method Not Allowed' })
