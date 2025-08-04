@@ -45,6 +45,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (typeof password !== 'string' || password.length < 6 || password.length > 32) {
           return res.status(400).json({ error: 'Password length must be 6-32 characters' })
         }
+        // 注册流程前生成唯一昵称
+        // 优化昵称生成逻辑
+        const batchSize = 20
+        let nickname: string = ''
+        let found = false
+        while (!found) {
+          // 批量生成昵称
+          const candidates = Array.from(
+            { length: batchSize },
+            () => `Adventure_#${Math.floor(1000 + Math.random() * 9000)}`,
+          )
+          // 查询已存在的昵称
+          const existNicknames = await prisma.user.findMany({
+            where: { nickname: { in: candidates } },
+            select: { nickname: true },
+          })
+          const existSet = new Set(existNicknames.map((u) => u.nickname))
+          // 选出未被使用的昵称
+          const available = candidates.filter((n) => !existSet.has(n))
+          if (available.length > 0) {
+            nickname = available[0]
+            found = true
+          }
+        }
         // 注册流程
         const hash = await bcrypt.hash(password, 10)
         const randomDefaultAvatar =
@@ -60,6 +84,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             expPercent: 0,
             meltCurrent: 20,
             meltMax: 20,
+            nickname,
           },
         })
         // 不返回密码
