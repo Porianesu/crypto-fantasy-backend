@@ -28,6 +28,7 @@ model User {
   deckPower           Int                @default(0) // 新增字段，存储卡组总战力
   RedemptionRecord    RedemptionRecord[]
   nickname            String             @unique // 改为必填字段，唯一
+  purchases           UserShopPurchase[] // 新增字段，用户购买记录
 }
 
 model Card {
@@ -83,4 +84,25 @@ model RedemptionRecord {
   code       RedemptionCode @relation(fields: [codeId], references: [id])
   codeId     Int
   redeemedAt DateTime       @default(now())
+}
+
+model ShopItem {
+  id              Int                @id @default(autoincrement())
+  key             String             @unique // 商品标识，如 "melt_times"、"daily_bonus"
+  name            String
+  price           Float // 消耗的 solAmount
+  rewardSol       Float              @default(0)
+  rewardFaith     Float              @default(0)
+  rewardMeltTimes Int                @default(0)
+  dailyLimit      Int                @default(-1) // -1/0 表示不限购，>=1 表示每日限购次数
+  purchases       UserShopPurchase[]
+}
+
+model UserShopPurchase {
+  id          Int      @id @default(autoincrement())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      Int
+  shopItem    ShopItem @relation(fields: [shopItemId], references: [id])
+  shopItemId  Int
+  purchasedAt DateTime @default(now())
 }
