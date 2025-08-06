@@ -95,6 +95,7 @@ model ShopItem {
   rewardFaith     Float              @default(0)
   rewardMeltTimes Int                @default(0)
   dailyLimit      Int                @default(-1) // -1/0 表示不限购，>=1 表示每日限购次数
+  image           String // 商品图片URL
   purchases       UserShopPurchase[]
 }
 
