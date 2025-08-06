@@ -40,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 使用BigNumber进行余额比较
   const solAmountBN = new BigNumber(user.solAmount)
-  const costBN = new BigNumber(0.1)
+  const costBN = new BigNumber(1)
   if (solAmountBN.lt(costBN)) {
     return res.status(400).json({ error: 'Insufficient Balance!' })
   }
