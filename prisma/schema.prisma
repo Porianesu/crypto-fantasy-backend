@@ -29,6 +29,7 @@ model User {
   RedemptionRecord    RedemptionRecord[]
   nickname            String             @unique // 改为必填字段，唯一
   purchases           UserShopPurchase[] // 新增字段，用户购买记录
+  newbieRewardClaimed Boolean            @default(false) // 新增字段，标记是否已领取新手礼包
 }
 
 model Card {
