@@ -78,7 +78,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(403).json({ error: 'Insufficient solAmount' })
     }
     // 扣除余额并发放奖励
-    await prisma.user.update({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userData } = await prisma.user.update({
       where: { id: user.id },
       data: {
         solAmount: { decrement: item.price },
@@ -93,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         shopItemId: item.id,
       },
     })
-    return res.status(200).json({ success: true })
+    return res.status(200).json({ success: true, user: userData })
   }
 
   return res.status(405).json({ error: 'Method not allowed' })
