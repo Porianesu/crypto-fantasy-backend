@@ -46,8 +46,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       success: true,
-      solAmount: updatedUser.solAmount,
-      faithAmount: updatedUser.faithAmount,
+      user: {
+        solAmount: updatedUser.solAmount,
+        faithAmount: updatedUser.faithAmount,
+        newbieRewardClaimed: updatedUser.newbieRewardClaimed,
+      }
     })
   } catch (error) {
     console.log('Error claiming newbie reward:', error)
