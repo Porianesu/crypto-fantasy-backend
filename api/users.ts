@@ -9,22 +9,14 @@ const prisma = new PrismaClient()
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS,PATCH')
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS,PATCH')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
 
   if (req.method === 'OPTIONS') {
     // 预检请求直接返回204
     return res.status(204).end()
   }
-  if (req.method === 'GET') {
-    try {
-      const users = await prisma.user.findMany()
-      res.status(200).json(users)
-    } catch (error) {
-      console.log('get users error', error)
-      res.status(500).json({ error: 'Failed to fetch users' })
-    }
-  } else if (req.method === 'POST') {
+  if (req.method === 'POST') {
     try {
       if (!req.body) {
         return res.status(400).json({ error: 'Request body cannot be empty' })
