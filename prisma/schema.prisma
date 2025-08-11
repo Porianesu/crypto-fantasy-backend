@@ -30,6 +30,7 @@ model User {
   nickname            String             @unique // 改为必填字段，唯一
   purchases           UserShopPurchase[] // 新增字段，用户购买记录
   newbieRewardClaimed Boolean            @default(false) // 新增字段，标记是否已领取新手礼包
+  signIns             UserSignIn[]
 }
 
 model Card {
@@ -107,4 +108,12 @@ model UserShopPurchase {
   shopItem    ShopItem @relation(fields: [shopItemId], references: [id])
   shopItemId  Int
   purchasedAt DateTime @default(now())
+}
+
+model UserSignIn {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  signInDate DateTime // 签到日期（UTC，精确到天即可）
+  createdAt  DateTime @default(now())
 }
