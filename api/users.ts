@@ -1,8 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
-import { signToken, verifyToken } from './utils/jwt'
-import { DefaultAvatars } from './utils/config'
+import { signToken, verifyToken } from '../utils/jwt'
+import { DefaultAvatars } from '../utils/config'
 
 const prisma = new PrismaClient()
 

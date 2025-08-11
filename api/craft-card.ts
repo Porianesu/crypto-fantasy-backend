@@ -1,8 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { Card, PrismaClient } from '@prisma/client'
-import { verifyToken } from './utils/jwt'
-import { CraftRule, ICraftRule } from './utils/config'
-import { successRateCalculate } from './utils/common'
+import { verifyToken } from '../utils/jwt'
+import { CraftRule, ICraftRule } from '../utils/config'
+import { successRateCalculate } from '../utils/common'
 import { BigNumber } from 'bignumber.js'
 
 const prisma = new PrismaClient()

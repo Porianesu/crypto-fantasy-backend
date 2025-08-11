@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { PrismaClient } from '@prisma/client'
-import { verifyToken } from './utils/jwt'
-import { MeltRule } from './utils/config'
+import { verifyToken } from '../utils/jwt'
+import { MeltRule } from '../utils/config'
 
 const prisma = new PrismaClient()
 
