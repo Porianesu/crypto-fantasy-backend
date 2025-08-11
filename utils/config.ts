@@ -74,3 +74,34 @@ export const CraftRule: Array<ICraftRule> = [
     maxSuccessRate: 0.3,
   },
 ]
+
+export const SignInReward = [
+  {
+    solAmount: 1,
+    faithAmount: 100,
+  },
+  {
+    solAmount: 3,
+    faithAmount: 300,
+  },
+  {
+    solAmount: 6,
+    faithAmount: 600,
+  },
+  {
+    solAmount: 10,
+    faithAmount: 1000,
+  },
+  {
+    solAmount: 15,
+    faithAmount: 1500,
+  },
+  {
+    solAmount: 21,
+    faithAmount: 2100,
+  },
+  {
+    solAmount: 28,
+    faithAmount: 2800,
+  },
+]
