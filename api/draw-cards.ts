@@ -41,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 使用BigNumber进行余额比较
   const solAmountBN = new BigNumber(user.solAmount)
   const costBN = new BigNumber(1)
-  if (solAmountBN.lt(costBN)) {
+  if (solAmountBN.isLessThan(costBN)) {
     return res.status(400).json({ error: 'Insufficient Balance!' })
   }
   // 分组，每4张为一个类型
@@ -69,40 +69,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   })
 
-  const newSolAmount = solAmountBN.minus(costBN).toNumber()
   const now = new Date()
   const userId = user.id
-  // 批量插入UserCard，记录obtainedAt
-  await prisma.userCard.createMany({
-    data: resultCards.map((card) => ({ userId, cardId: card.id, obtainedAt: now })),
-  })
-
-  // 查询本次新获得的userCard
-  const newUserCards = await prisma.userCard.findMany({
-    where: {
-      userId,
-      obtainedAt: { gte: now },
-      cardId: { in: resultCards.map((card) => card.id) },
-    },
-    include: { card: true },
+  // 使用事务保证原子性
+  const result = await prisma.$transaction(async (tx) => {
+    // 扣减余额
+    const updatedUser = await tx.user.update({
+      where: { email },
+      data: {
+        solAmount: {
+          decrement: costBN.toNumber(),
+        },
+      },
+    })
+    // 批量插入UserCard
+    await tx.userCard.createMany({
+      data: resultCards.map((card) => ({ userId, cardId: card.id, obtainedAt: now })),
+    })
+    // 查询新获得的userCard
+    const newUserCards = await tx.userCard.findMany({
+      where: {
+        userId,
+        obtainedAt: { gte: now },
+        cardId: { in: resultCards.map((card) => card.id) },
+      },
+      include: { card: true },
+    })
+    return { updatedUser, newUserCards }
   })
 
   // 合并userCardId到resultCards
-  const cardsWithUserCardId = newUserCards.map((item) => ({
+  const cardsWithUserCardId = result.newUserCards.map((item) => ({
     ...item.card,
     userCardId: item.id,
   }))
 
-  // 更新用户余额
-  const updatedUser = await prisma.user.update({
-    where: { email },
-    data: {
-      solAmount: newSolAmount,
-    },
-  })
-
   // 不返回密码
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password, ...userData } = updatedUser
+  const { password, ...userData } = result.updatedUser
   res.status(200).json({ cards: cardsWithUserCardId, user: userData })
 }
