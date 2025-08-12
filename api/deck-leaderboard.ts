@@ -1,8 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { PrismaClient } from '@prisma/client'
 import { verifyToken } from '../utils/jwt'
-
-const prisma = new PrismaClient()
+import prisma from '../prisma'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')

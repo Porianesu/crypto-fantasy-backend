@@ -1,10 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { signToken, verifyToken } from '../utils/jwt'
 import { DefaultAvatars } from '../utils/config'
-
-const prisma = new PrismaClient()
+import prisma from '../prisma'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 设置CORS头

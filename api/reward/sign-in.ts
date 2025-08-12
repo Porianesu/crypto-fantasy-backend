@@ -1,9 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { PrismaClient } from '@prisma/client'
 import { verifyToken } from '../../utils/jwt'
 import { SignInReward } from '../../utils/config'
-
-const prisma = new PrismaClient()
+import prisma from '../../prisma'
 
 function getMonday(date: Date) {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
