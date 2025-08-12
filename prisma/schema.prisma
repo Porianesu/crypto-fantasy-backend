@@ -31,6 +31,7 @@ model User {
   purchases           UserShopPurchase[] // 新增字段，用户购买记录
   newbieRewardClaimed Boolean            @default(false) // 新增字段，标记是否已领取新手礼包
   signIns             UserSignIn[]
+  UserAchievement     UserAchievement[]
 }
 
 model Card {
@@ -116,4 +117,30 @@ model UserSignIn {
   userId     Int
   signInDate DateTime // 签到日期（UTC，精确到天即可）
   createdAt  DateTime @default(now())
+}
+
+model Achievement {
+  id                Int               @id @default(autoincrement())
+  type              String // 成就类型，如 collect_card, deck_score, fusion, resource
+  subType           String? // 子类型，如 rarity, count, recharge, spend, gain, consume
+  target            Int // 阶梯目标值
+  description       String
+  rewardSolAmount   Int // S代币奖励
+  rewardFaithAmount Int // F代币奖励
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  userAchievements  UserAchievement[]
+}
+
+model UserAchievement {
+  id            Int         @id @default(autoincrement())
+  user          User        @relation(fields: [userId], references: [id])
+  userId        Int
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  achievementId Int
+  status        Int // 0:未完成 1:已完成未领取 2:已领取
+  progress      Int // 当前进度
+  completedAt   DateTime?
+  claimedAt     DateTime?
+  createdAt     DateTime    @default(now())
 }
