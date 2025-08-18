@@ -80,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { password, ...userData } = await prisma.user.update({
       where: { id: user.id },
       data: {
-        solAmount: { decrement: item.price },
+        solAmount: item.price ? { decrement: item.price } : { increment: item.rewardSol },
         faithAmount: { increment: item.rewardFaith },
         meltCurrent: { increment: item.rewardMeltTimes },
       },

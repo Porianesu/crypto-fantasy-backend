@@ -1,5 +1,5 @@
 import { Achievement, Card, PrismaClient, User, UserAchievement } from '@prisma/client'
-import { CARD_RARITY } from './config'
+import { CARD_RARITY } from '../config'
 
 const prisma = new PrismaClient()
 
