@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../utils/jwt'
 import prisma from '../prisma'
+import { handleAchievementDeckScoreRank } from '../utils/achievement/deck_score'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -15,18 +16,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // 统一鉴权，使用verifyToken(req)
-  let email: string | null = null
-  try {
-    email = verifyToken(req)
-  } catch {
-    email = null
+  const email = verifyToken(req)
+  if (!email) {
+    return res.status(401).json({ error: 'Unauthorized' })
   }
-  let userId: number | null = null
-  if (email) {
-    const user = await prisma.user.findUnique({ where: { email } })
-    if (user) userId = user.id
+  // 查询用户
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user) {
+    return res.status(401).json({ error: 'User not found' })
   }
+  const userId = user.id
 
   // 查询前50名排行榜
   const topUsers = await prisma.user.findMany({
@@ -42,16 +41,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // 查询当前用户战力和排名
   let myDeckPower = 0
-  let myRank = null
-  if (userId) {
-    const me = await prisma.user.findUnique({ where: { id: userId }, select: { deckPower: true } })
-    if (me) {
-      myDeckPower = me.deckPower
-      // 查询排名
-      const count = await prisma.user.count({ where: { deckPower: { gt: myDeckPower } } })
-      myRank = count + 1
-    }
+  let myRank = Infinity
+  const me = await prisma.user.findUnique({ where: { id: userId }, select: { deckPower: true } })
+  if (me) {
+    myDeckPower = me.deckPower
+    // 查询排名
+    const count = await prisma.user.count({ where: { deckPower: { gt: myDeckPower } } })
+    myRank = count + 1
   }
+  await handleAchievementDeckScoreRank(user, myRank)
 
   res.status(200).json({
     leaderboard: topUsers,
