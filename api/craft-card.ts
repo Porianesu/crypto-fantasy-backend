@@ -6,6 +6,7 @@ import { successRateCalculate } from '../utils/common'
 import { BigNumber } from 'bignumber.js'
 import prisma from '../prisma'
 import { handleAchievementCardsCollect } from '../utils/achievement/card-collect'
+import { handleAchievementCardCraft } from '../utils/achievement/unique'
 
 const isRequiredCardValid = (targetCard: Card, requiredCard: Card, ruleConfig: ICraftRule) => {
   if (requiredCard.id + 1 !== targetCard.id) {
@@ -150,7 +151,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
           include: { card: true },
         })
-        await handleAchievementCardsCollect(updatedUser, [craftCard], tx)
+        // 更新成就
+        await Promise.all([
+          handleAchievementCardCraft(updatedUser, 1, tx),
+          handleAchievementCardsCollect(updatedUser, [craftCard], tx),
+        ])
         return {
           success: true,
           resultCards: [{ ...userCardCreateResult.card, userCardId: userCardCreateResult.id }],

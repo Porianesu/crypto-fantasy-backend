@@ -2,7 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../utils/jwt'
 import { MeltRule } from '../utils/config'
 import prisma from '../prisma'
-import { handleAchievementDeckCardFusion } from '../utils/achievement/unique'
+import { handleAchievementCardFusion } from '../utils/achievement/unique'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -81,7 +81,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       })
       // 处理成就
-      await handleAchievementDeckCardFusion(updatedUser, 1, tx)
+      await handleAchievementCardFusion(updatedUser, 1, tx)
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...userData } = updatedUser
