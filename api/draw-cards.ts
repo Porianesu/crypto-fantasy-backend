@@ -94,6 +94,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       include: { card: true },
     })
+    // 处理成就卡牌收集逻辑
+    await handleAchievementCardsCollect(
+      updatedUser,
+      newUserCards.map((item) => item.card),
+      tx,
+    )
     return { updatedUser, newUserCards }
   })
 
@@ -102,11 +108,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ...item.card,
     userCardId: item.id,
   }))
-  // 处理成就卡牌收集逻辑，先异步处理
-  await handleAchievementCardsCollect(
-    result.updatedUser,
-    result.newUserCards.map((item) => item.card),
-  )
 
   // 不返回密码
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
