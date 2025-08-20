@@ -114,91 +114,100 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Additive cards doesn't match" })
   }
 
-  await prisma.$transaction(async (tx) => {
-    // faithAmount 扣款
-    const updatedUser = await tx.user.update({
-      where: { id: user.id },
-      data: { faithAmount: { decrement: craftConfig.requiredFaithCoin } },
-    })
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userData } = updatedUser
+  try {
+    const transactionResult = await prisma.$transaction(async (tx) => {
+      // faithAmount 扣款
+      const updatedUser = await tx.user.update({
+        where: { id: user.id },
+        data: { faithAmount: { decrement: craftConfig.requiredFaithCoin } },
+      })
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userData } = updatedUser
 
-    const successRate = successRateCalculate(
-      craftConfig,
-      craftCard,
-      additiveCards.map((card) => card.card),
-    )
-    const randomNumber = new BigNumber(Math.random())
-    // 删除所有消耗的卡牌
-    await tx.userCard.deleteMany({
-      where: {
-        id: {
-          in: [
-            ...requiredCards.map((userCard) => userCard.id),
-            ...additiveCards.map((userCard) => userCard.id),
-          ],
-        },
-      },
-    })
-    if (randomNumber.isLessThanOrEqualTo(successRate)) {
-      // 合成成功
-      const userCardCreateResult = await tx.userCard.create({
-        data: {
-          userId: user.id,
-          cardId: craftCard.id,
-        },
-        include: { card: true },
-      })
-      await handleAchievementCardsCollect(updatedUser, [craftCard], tx)
-      return res.status(200).json({
-        success: true,
-        resultCards: [{ ...userCardCreateResult.card, userCardId: userCardCreateResult.id }],
-        user: userData,
-      })
-    } else {
-      // 合成失败，返还部分卡牌
-      const randomRequiredCardIndex = Math.floor(Math.random() * requiredCards.length)
-      const returnRequiredCards = requiredCards[randomRequiredCardIndex]
-      const resultCards = [returnRequiredCards.card]
-      // 可选：随机返还一张 additiveCards 中的卡
-      if (additiveCards.length > 0) {
-        const randomAdditiveCardIndex = Math.floor(Math.random() * additiveCards.length)
-        const targetAdditiveCard = additiveCards[randomAdditiveCardIndex]
-        const returnAdditiveCard = await prisma.card.findFirst({
-          where: {
-            id:
-              targetAdditiveCard.card.rarity === 0
-                ? targetAdditiveCard.cardId
-                : targetAdditiveCard.cardId - 1,
-          },
-        })
-        if (!returnAdditiveCard) {
-          return res.status(404).json({ error: 'Return additive card not found' })
-        }
-        resultCards.push(returnAdditiveCard)
-      }
-      // 返还卡牌
-      const returnUserCards = await Promise.all(
-        resultCards.map((card) =>
-          tx.userCard.create({
-            data: {
-              userId: user.id,
-              cardId: card.id,
-            },
-            include: {
-              card: true,
-            },
-          }),
-        ),
+      const successRate = successRateCalculate(
+        craftConfig,
+        craftCard,
+        additiveCards.map((card) => card.card),
       )
-      return res.status(200).json({
-        success: false,
-        resultCards: returnUserCards.map((userCard) => ({
-          ...userCard.card,
-          userCardId: userCard.id,
-        })),
-        user: userData,
+      const randomNumber = new BigNumber(Math.random())
+      // 删除所有消耗的卡牌
+      await tx.userCard.deleteMany({
+        where: {
+          id: {
+            in: [
+              ...requiredCards.map((userCard) => userCard.id),
+              ...additiveCards.map((userCard) => userCard.id),
+            ],
+          },
+        },
       })
-    }
-  })
+      if (randomNumber.isLessThanOrEqualTo(successRate)) {
+        // 合成成功
+        const userCardCreateResult = await tx.userCard.create({
+          data: {
+            userId: user.id,
+            cardId: craftCard.id,
+          },
+          include: { card: true },
+        })
+        await handleAchievementCardsCollect(updatedUser, [craftCard], tx)
+        return {
+          success: true,
+          resultCards: [{ ...userCardCreateResult.card, userCardId: userCardCreateResult.id }],
+          user: userData,
+        }
+      } else {
+        // 合成失败，返还部分卡牌
+        const randomRequiredCardIndex = Math.floor(Math.random() * requiredCards.length)
+        const returnRequiredCards = requiredCards[randomRequiredCardIndex]
+        const resultCards = [returnRequiredCards.card]
+        // 可选：随机返还一张 additiveCards 中的卡
+        if (additiveCards.length > 0) {
+          const randomAdditiveCardIndex = Math.floor(Math.random() * additiveCards.length)
+          const targetAdditiveCard = additiveCards[randomAdditiveCardIndex]
+          const returnAdditiveCard = await prisma.card.findFirst({
+            where: {
+              id:
+                targetAdditiveCard.card.rarity === 0
+                  ? targetAdditiveCard.cardId
+                  : targetAdditiveCard.cardId - 1,
+            },
+          })
+          if (!returnAdditiveCard) {
+            throw new Error('Return additive card not found')
+          }
+          resultCards.push(returnAdditiveCard)
+        }
+        // 返还卡牌
+        const returnUserCards = await Promise.all(
+          resultCards.map((card) =>
+            tx.userCard.create({
+              data: {
+                userId: user.id,
+                cardId: card.id,
+              },
+              include: {
+                card: true,
+              },
+            }),
+          ),
+        )
+        return {
+          success: false,
+          resultCards: returnUserCards.map((userCard) => ({
+            ...userCard.card,
+            userCardId: userCard.id,
+          })),
+          user: userData,
+        }
+      }
+    })
+    return res.status(200).json({
+      success: transactionResult.success,
+      resultCards: transactionResult.resultCards,
+      user: transactionResult.user,
+    })
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : 'Internal Server Error' })
+  }
 }

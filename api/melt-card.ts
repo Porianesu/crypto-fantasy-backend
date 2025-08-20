@@ -2,6 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../utils/jwt'
 import { MeltRule } from '../utils/config'
 import prisma from '../prisma'
+import { handleAchievementDeckCardFusion } from '../utils/achievement/unique'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -51,36 +52,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // 查询用户卡牌
-  const userCard = await prisma.userCard.findUnique({
-    where: { id: parsedUserCardId },
-    include: { card: true },
-  })
-  if (!userCard || userCard.userId !== userId) {
-    return res.status(404).json({ error: 'Card not found in user inventory' })
+  // 使用事务处理 melt-card 逻辑
+  try {
+    const transactionResult = await prisma.$transaction(async (tx) => {
+      // 查找用户卡牌
+      const userCard = await tx.userCard.findUnique({
+        where: { id: parsedUserCardId },
+        include: { card: true },
+      })
+      if (!userCard || userCard.userId !== userId) {
+        throw new Error('Card not found in user inventory')
+      }
+
+      // 查找返还的faithCoin
+      const meltConfig = MeltRule.find((r) => r.rarity === userCard.card.rarity)
+      if (!meltConfig) {
+        throw new Error('Melt config not found')
+      }
+
+      // 删除用户卡牌
+      await tx.userCard.delete({ where: { id: userCard.id } })
+      // 增加用户faithAmount
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: {
+          faithAmount: { increment: meltConfig.faithCoin },
+          meltCurrent: { decrement: 1 },
+        },
+      })
+      // 处理成就
+      await handleAchievementDeckCardFusion(updatedUser, 1, tx)
+
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userData } = updatedUser
+      return {
+        user: userData,
+      }
+    })
+    return res.status(200).json({
+      user: transactionResult.user,
+    })
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : 'Internal Server Error' })
   }
-
-  // 查找返还的faithCoin
-  const meltConfig = MeltRule.find((r) => r.rarity === userCard.card.rarity)
-  if (!meltConfig) {
-    return res.status(500).json({ error: 'Melt config not found' })
-  }
-
-  // 删除用户卡牌
-  await prisma.userCard.delete({ where: { id: userCard.id } })
-  // 增加用户faithAmount
-  const updatedUser = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      faithAmount: { increment: meltConfig.faithCoin },
-      meltCurrent: { decrement: 1 },
-    },
-  })
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password, ...userData } = updatedUser
-
-  return res.status(200).json({
-    user: userData,
-  })
 }
