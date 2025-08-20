@@ -6,7 +6,10 @@ import { successRateCalculate } from '../utils/common'
 import { BigNumber } from 'bignumber.js'
 import prisma from '../prisma'
 import { handleAchievementCardsCollect } from '../utils/achievement/card-collect'
-import { handleAchievementCardCraft } from '../utils/achievement/unique'
+import {
+  handleAchievementCardCraft,
+  handleAchievementCardsFaithConsume,
+} from '../utils/achievement/unique'
 
 const isRequiredCardValid = (targetCard: Card, requiredCard: Card, ruleConfig: ICraftRule) => {
   if (requiredCard.id + 1 !== targetCard.id) {
@@ -122,6 +125,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         where: { id: user.id },
         data: { faithAmount: { decrement: craftConfig.requiredFaithCoin } },
       })
+      //更新成就
+      await handleAchievementCardsFaithConsume(updatedUser, craftConfig.requiredFaithCoin, tx)
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...userData } = updatedUser
 
