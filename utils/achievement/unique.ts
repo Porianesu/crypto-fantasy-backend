@@ -32,3 +32,19 @@ export const handleAchievementCardCraft = async (
     tx,
   )
 }
+
+export const handleAchievementSolConsume = async (
+  user: User,
+  amount: number,
+  tx?: Prisma.TransactionClient,
+) => {
+  await handleCountTypeAchievement(
+    {
+      user,
+      amount,
+      type: 'sol_consume',
+      subType: 'amount',
+    },
+    tx,
+  )
+}

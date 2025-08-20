@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../utils/jwt'
 import prisma from '../prisma'
+import { handleAchievementSolConsume } from '../utils/achievement/unique'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -56,43 +57,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!item) {
       return res.status(404).json({ error: 'Shop item not found' })
     }
-    // 校验限购
-    if (item.dailyLimit > 0) {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const todayCount = await prisma.userShopPurchase.count({
-        where: {
-          userId: user.id,
-          shopItemId: item.id,
-          purchasedAt: { gte: today },
-        },
+    try {
+      const transactionResult = await prisma.$transaction(async (tx) => {
+        // 校验限购
+        if (item.dailyLimit > 0) {
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const todayCount = await prisma.userShopPurchase.count({
+            where: {
+              userId: user.id,
+              shopItemId: item.id,
+              purchasedAt: { gte: today },
+            },
+          })
+          if (todayCount >= item.dailyLimit) {
+            throw new Error('Daily purchase limit reached')
+          }
+        }
+        // 校验余额
+        if (user.solAmount < item.price) {
+          throw new Error('Insufficient solAmount')
+        }
+        // 扣除成就
+        if (item.price) {
+          await handleAchievementSolConsume(user, item.price, tx)
+        }
+        // 扣除余额并发放奖励
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...userData } = await tx.user.update({
+          where: { id: user.id },
+          data: {
+            solAmount: item.price ? { decrement: item.price } : { increment: item.rewardSol },
+            faithAmount: { increment: item.rewardFaith },
+            meltCurrent: { increment: item.rewardMeltTimes },
+          },
+        })
+        // 记录购买
+        await tx.userShopPurchase.create({
+          data: {
+            userId: user.id,
+            shopItemId: item.id,
+          },
+        })
+        return { success: true, user: userData }
       })
-      if (todayCount >= item.dailyLimit) {
-        return res.status(403).json({ error: 'Daily purchase limit reached' })
-      }
+      return res.status(200).json({
+        success: transactionResult.success,
+        user: transactionResult.user,
+      })
+    } catch (e) {
+      return res
+        .status(500)
+        .json({ error: e instanceof Error ? e.message : 'Internal Server Error' })
     }
-    // 校验余额
-    if (user.solAmount < item.price) {
-      return res.status(403).json({ error: 'Insufficient solAmount' })
-    }
-    // 扣除余额并发放奖励
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...userData } = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        solAmount: item.price ? { decrement: item.price } : { increment: item.rewardSol },
-        faithAmount: { increment: item.rewardFaith },
-        meltCurrent: { increment: item.rewardMeltTimes },
-      },
-    })
-    // 记录购买
-    await prisma.userShopPurchase.create({
-      data: {
-        userId: user.id,
-        shopItemId: item.id,
-      },
-    })
-    return res.status(200).json({ success: true, user: userData })
   }
 
   return res.status(405).json({ error: 'Method not allowed' })

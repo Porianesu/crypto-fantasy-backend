@@ -3,6 +3,7 @@ import BigNumber from 'bignumber.js'
 import { verifyToken } from '../utils/jwt'
 import prisma from '../prisma'
 import { handleAchievementCardsCollect } from '../utils/achievement/card-collect'
+import { handleAchievementSolConsume } from '../utils/achievement/unique'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -95,11 +96,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       include: { card: true },
     })
     // 处理成就卡牌收集逻辑
-    await handleAchievementCardsCollect(
-      updatedUser,
-      newUserCards.map((item) => item.card),
-      tx,
-    )
+    await Promise.all([
+      handleAchievementSolConsume(updatedUser, costBN.toNumber(), tx),
+      handleAchievementCardsCollect(
+        updatedUser,
+        newUserCards.map((item) => item.card),
+        tx,
+      ),
+    ])
     return { updatedUser, newUserCards }
   })
 
