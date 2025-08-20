@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../utils/jwt'
 import prisma from '../prisma'
+import { handleAchievementDeckScore } from '../utils/achievement/deck_score'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -78,5 +79,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       deckPower,
     },
   })
+  await handleAchievementDeckScore(user, deckPower)
   res.status(200).json({ success: true, deckCards, deckPower })
 }
