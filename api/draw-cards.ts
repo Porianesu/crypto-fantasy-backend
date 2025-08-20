@@ -2,6 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node'
 import BigNumber from 'bignumber.js'
 import { verifyToken } from '../utils/jwt'
 import prisma from '../prisma'
+import { handleAchievementCardsCollect } from '../utils/achievement/card-collect'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -101,6 +102,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ...item.card,
     userCardId: item.id,
   }))
+  // 处理成就卡牌收集逻辑，先异步处理
+  handleAchievementCardsCollect(
+    result.updatedUser,
+    result.newUserCards.map((item) => item.card),
+  )
 
   // 不返回密码
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

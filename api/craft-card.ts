@@ -5,6 +5,7 @@ import { CraftRule, ICraftRule } from '../utils/config'
 import { successRateCalculate } from '../utils/common'
 import { BigNumber } from 'bignumber.js'
 import prisma from '../prisma'
+import { handleAchievementCardsCollect } from '../utils/achievement/card-collect'
 
 const isRequiredCardValid = (targetCard: Card, requiredCard: Card, ruleConfig: ICraftRule) => {
   if (requiredCard.id + 1 !== targetCard.id) {
@@ -113,55 +114,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Additive cards doesn't match" })
   }
 
-  // faithAmount 扣款
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { password, ...userData } = await prisma.user.update({
-    where: { id: user.id },
-    data: { faithAmount: { decrement: craftConfig.requiredFaithCoin } },
-  })
+  await prisma.$transaction(async (tx) => {
+    // faithAmount 扣款
+    const updatedUser = await tx.user.update({
+      where: { id: user.id },
+      data: { faithAmount: { decrement: craftConfig.requiredFaithCoin } },
+    })
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...userData } = updatedUser
 
-  const successRate = successRateCalculate(
-    craftConfig,
-    craftCard,
-    additiveCards.map((card) => card.card),
-  )
-  const randomNumber = new BigNumber(Math.random())
-  // 删除所有消耗的卡牌
-  await prisma.userCard.deleteMany({
-    where: {
-      id: {
-        in: [
-          ...requiredCards.map((userCard) => userCard.id),
-          ...additiveCards.map((userCard) => userCard.id),
-        ],
+    const successRate = successRateCalculate(
+      craftConfig,
+      craftCard,
+      additiveCards.map((card) => card.card),
+    )
+    const randomNumber = new BigNumber(Math.random())
+    // 删除所有消耗的卡牌
+    await tx.userCard.deleteMany({
+      where: {
+        id: {
+          in: [
+            ...requiredCards.map((userCard) => userCard.id),
+            ...additiveCards.map((userCard) => userCard.id),
+          ],
+        },
       },
-    },
-  })
-  try {
+    })
     if (randomNumber.isLessThanOrEqualTo(successRate)) {
-      const userCardCreateResult = await prisma.userCard.create({
+      // 合成成功
+      const userCardCreateResult = await tx.userCard.create({
         data: {
           userId: user.id,
           cardId: craftCard.id,
         },
         include: { card: true },
       })
+      handleAchievementCardsCollect(updatedUser, [craftCard])
       return res.status(200).json({
         success: true,
+        resultCards: [{ ...userCardCreateResult.card, userCardId: userCardCreateResult.id }],
         user: userData,
-        resultCards: [
-          {
-            userCardId: userCardCreateResult.id,
-            ...userCardCreateResult.card,
-          },
-        ],
       })
     } else {
-      // 合成失败逻辑：按规则返还部分消耗卡牌
-      // 随机返还一张 requiredCards 中的卡
+      // 合成失败，返还部分卡牌
       const randomRequiredCardIndex = Math.floor(Math.random() * requiredCards.length)
-      const returnRequiredCard = requiredCards[randomRequiredCardIndex]
-      const resultCards: Array<number> = [returnRequiredCard.cardId]
+      const returnRequiredCards = requiredCards[randomRequiredCardIndex]
+      const resultCards = [returnRequiredCards.card]
       // 可选：随机返还一张 additiveCards 中的卡
       if (additiveCards.length > 0) {
         const randomAdditiveCardIndex = Math.floor(Math.random() * additiveCards.length)
@@ -177,36 +175,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!returnAdditiveCard) {
           return res.status(404).json({ error: 'Return additive card not found' })
         }
-        resultCards.push(returnAdditiveCard.id)
+        resultCards.push(returnAdditiveCard)
       }
-      const now = new Date()
-      // 返还 resultCards 到用户背包
-      await prisma.userCard.createMany({
-        data: resultCards.map((cardId) => ({
-          userId: user.id,
-          cardId: cardId,
-        })),
-      })
-      // 查询本次新获得的userCard
-      const newUserCards = await prisma.userCard.findMany({
-        where: {
-          userId: user.id,
-          obtainedAt: { gte: now },
-          cardId: { in: resultCards },
-        },
-        include: { card: true },
-      })
+      // 返还卡牌
+      const returnUserCards = await Promise.all(
+        resultCards.map((card) =>
+          tx.userCard.create({
+            data: {
+              userId: user.id,
+              cardId: card.id,
+            },
+            include: {
+              card: true,
+            },
+          }),
+        ),
+      )
       return res.status(200).json({
         success: false,
-        user: userData,
-        resultCards: newUserCards.map((item) => ({
-          ...item.card,
-          userCardId: item.id,
+        resultCards: returnUserCards.map((userCard) => ({
+          ...userCard.card,
+          userCardId: userCard.id,
         })),
+        user: userData,
       })
     }
-  } catch (error) {
-    console.error('Craft error:', error)
-    return res.status(500).json({ message: 'Internal server error' })
-  }
+  })
 }
