@@ -149,7 +149,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
         include: { card: true },
       })
-      handleAchievementCardsCollect(updatedUser, [craftCard])
+      await handleAchievementCardsCollect(updatedUser, [craftCard])
       return res.status(200).json({
         success: true,
         resultCards: [{ ...userCardCreateResult.card, userCardId: userCardCreateResult.id }],

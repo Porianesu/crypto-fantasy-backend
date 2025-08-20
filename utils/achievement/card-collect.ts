@@ -8,7 +8,7 @@ async function handleAchievementCardsCollectWithSubtype(
   subType: 'amount' | 'normal' | 'rare' | 'epic' | 'legendary' = 'amount',
   amount: number,
 ) {
-  if (!user || amount < 0) return
+  if (!user || amount <= 0) return
   const userId = user.id
   await prisma.$transaction(async (tx) => {
     const allAchievements = await tx.achievement.findMany({

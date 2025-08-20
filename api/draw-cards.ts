@@ -103,7 +103,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     userCardId: item.id,
   }))
   // 处理成就卡牌收集逻辑，先异步处理
-  handleAchievementCardsCollect(
+  await handleAchievementCardsCollect(
     result.updatedUser,
     result.newUserCards.map((item) => item.card),
   )
