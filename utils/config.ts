@@ -12,6 +12,11 @@ export enum CARD_RARITY {
   LEGENDARY = 3,
 }
 
+export const NewbieReward = {
+  solAmount: 20,
+  faithAmount: 10000,
+}
+
 export const MeltRule = [
   {
     rarity: CARD_RARITY.NORMAL,

@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../../utils/jwt'
 import prisma from '../../prisma'
+import { NewbieReward } from '../../utils/config'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -36,8 +37,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
-        solAmount: { increment: 100 },
-        faithAmount: { increment: 10000 },
+        solAmount: { increment: NewbieReward.solAmount },
+        faithAmount: { increment: NewbieReward.faithAmount },
         newbieRewardClaimed: true,
       },
     })
