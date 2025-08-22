@@ -53,6 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
 
     if (req.method === 'GET') {
+      const totalSignInCount = await prisma.userSignIn.count({ where: { userId } })
       // 查询本周签到状态
       // 构造每一天的签到状态
       const signInStatus = Array.from({ length: 7 }, (_, i) => {
@@ -72,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           signed,
         }
       })
-      return res.status(200).json({ signInStatus })
+      return res.status(200).json({ totalSignInCount, signInStatus })
     }
 
     if (req.method === 'POST') {
@@ -92,24 +93,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // 发放奖励
       const dayIndex = now.getUTCDay() === 0 ? 6 : now.getUTCDay() - 1 // 周日为第7天
       const reward = SignInReward[dayIndex]
-      await prisma.userSignIn.create({
-        data: {
-          userId,
-          signInDate: today,
-        },
+      const result = await prisma.$transaction(async (tx) => {
+        await tx.userSignIn.create({
+          data: {
+            userId,
+            signInDate: today,
+          },
+        })
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            solAmount: { increment: reward.solAmount },
+            faithAmount: { increment: reward.faithAmount },
+          },
+        })
+        return {
+          signDate: today,
+          success: true,
+          reward,
+        }
       })
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          solAmount: { increment: reward.solAmount },
-          faithAmount: { increment: reward.faithAmount },
-        },
-      })
-      return res.status(200).json({
-        signDate: today,
-        success: true,
-        reward,
-      })
+      return res.status(200).json(result)
     }
 
     return res.status(405).json({ error: 'Method not allowed' })
