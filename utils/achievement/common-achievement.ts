@@ -7,7 +7,12 @@ const handleCountTypeAchievementLogic = async (
   amount: number,
   type: string,
   subType = 'amount',
+  recursiveProtection = 0,
 ) => {
+  if (recursiveProtection >= 5) {
+    console.error('Max recursion depth reached in handleCountTypeAchievementLogic')
+    return
+  }
   if (!user || amount <= 0 || !type) return
   const userId = user.id
   const allAchievements = await tx.achievement.findMany({
@@ -89,6 +94,7 @@ const handleCountTypeAchievementLogic = async (
       newAchievementProgress - unfinishedAchievement.target,
       type,
       subType,
+      recursiveProtection + 1,
     )
   }
 }

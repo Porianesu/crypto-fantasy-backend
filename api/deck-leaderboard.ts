@@ -20,40 +20,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!email) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
-  // 查询用户
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) {
-    return res.status(401).json({ error: 'User not found' })
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // 查询用户
+      const user = await tx.user.findUnique({ where: { email } })
+      if (!user) {
+        throw new Error('User not found')
+      }
+      const userId = user.id
+
+      // 查询前50名排行榜
+      const topUsers = await tx.user.findMany({
+        orderBy: { deckPower: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          nickname: true,
+          avatar: true,
+          deckPower: true,
+        },
+      })
+
+      // 查询当前用户战力和排名
+      let myDeckPower = 0
+      let myRank = Infinity
+      const me = await tx.user.findUnique({
+        where: { id: userId },
+        select: { deckPower: true },
+      })
+      if (me) {
+        myDeckPower = me.deckPower
+        // 查询排名
+        const count = await tx.user.count({ where: { deckPower: { gt: myDeckPower } } })
+        myRank = count + 1
+      }
+      await handleAchievementDeckScoreRank(user, myRank, tx)
+      return {
+        leaderboard: topUsers,
+        myDeckPower,
+        myRank,
+      }
+    })
+    return res.status(200).json(result)
+  } catch (e) {
+    return res.status(500).json({ error: e instanceof Error ? e.message : 'Internal Server Error' })
   }
-  const userId = user.id
-
-  // 查询前50名排行榜
-  const topUsers = await prisma.user.findMany({
-    orderBy: { deckPower: 'desc' },
-    take: 50,
-    select: {
-      id: true,
-      nickname: true,
-      avatar: true,
-      deckPower: true,
-    },
-  })
-
-  // 查询当前用户战力和排名
-  let myDeckPower = 0
-  let myRank = Infinity
-  const me = await prisma.user.findUnique({ where: { id: userId }, select: { deckPower: true } })
-  if (me) {
-    myDeckPower = me.deckPower
-    // 查询排名
-    const count = await prisma.user.count({ where: { deckPower: { gt: myDeckPower } } })
-    myRank = count + 1
-  }
-  await handleAchievementDeckScoreRank(user, myRank)
-
-  res.status(200).json({
-    leaderboard: topUsers,
-    myDeckPower,
-    myRank,
-  })
 }
