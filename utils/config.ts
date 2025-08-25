@@ -12,6 +12,17 @@ export enum CARD_RARITY {
   LEGENDARY = 3,
 }
 
+export const ReferralReward = {
+  invited: {
+    solAmount: 50,
+    faithAmount: 5000,
+  },
+  inviter: {
+    solAmount: 50,
+    faithAmount: 5000,
+  },
+}
+
 export const NewbieReward = {
   solAmount: 20,
   faithAmount: 10000,

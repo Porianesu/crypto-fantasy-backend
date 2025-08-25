@@ -23,10 +23,6 @@ export const handleAchievementDeckScoreRank = async (
   tx: Prisma.TransactionClient,
   recursiveProtection = 0,
 ) => {
-  if (recursiveProtection >= 5) {
-    console.error('Max recursion depth reached in handleAchievementDeckScoreRank')
-    return
-  }
   if (!user || rank <= 0) return
   const userId = user.id
   const type = 'deck_score'
@@ -40,6 +36,10 @@ export const handleAchievementDeckScoreRank = async (
 
   if (allAchievements.length === 0) {
     console.error(`Achievement not found for ${type}(${subType})`)
+    return
+  }
+  if (recursiveProtection > allAchievements.length) {
+    console.error('Max recursion depth reached in handleAchievementDeckScoreRank')
     return
   }
 
