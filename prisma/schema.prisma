@@ -32,6 +32,9 @@ model User {
   newbieRewardClaimed Boolean            @default(false) // 新增字段，标记是否已领取新手礼包
   signIns             UserSignIn[]
   UserAchievement     UserAchievement[]
+  inviteCode          String?            @unique // 用户唯一邀请码，可选
+  invitees            Invitation[]       @relation("InvitationInvitee")
+  inviter             Invitation[]       @relation("InvitationInviter")
 }
 
 model Card {
@@ -143,4 +146,15 @@ model UserAchievement {
   completedAt   DateTime?
   claimedAt     DateTime?
   createdAt     DateTime    @default(now())
+}
+
+model Invitation {
+  id            Int      @id @default(autoincrement())
+  inviteeUserId Int      @unique // 被邀请者ID
+  inviterUserId Int // 邀请者ID
+  claimed       Boolean  @default(false) // 是否已领取
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  invitee       User     @relation("InvitationInvitee", fields: [inviteeUserId], references: [id])
+  inviter       User     @relation("InvitationInviter", fields: [inviterUserId], references: [id])
 }
