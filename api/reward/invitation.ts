@@ -35,6 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         inviteCode = generateRandomString(8)
         try {
           await prisma.user.update({ where: { id: user.id }, data: { inviteCode } })
+          console.log(`Create invite code ${inviteCode} for user ${user.email}`)
           break // 成功写入，跳出循环
         } catch (err: any) {
           // Prisma 唯一性冲突错误码
