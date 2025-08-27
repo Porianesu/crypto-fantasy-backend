@@ -1,7 +1,15 @@
-import {Card} from "@prisma/client";
-import {ICraftRule} from "./config";
+import { Card } from '@prisma/client'
+import { ICraftRule } from './config'
 import { BigNumber } from 'bignumber.js'
 
+export const generateRandomString = (length = 8) => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let code = ''
+  for (let i = 0; i < length; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return code
+}
 
 export const isCardsSameChain = (card1: Card, card2: Card) => {
   return Math.floor(card1.id / 4) === Math.floor(card2.id / 4)
@@ -17,7 +25,11 @@ const calculateAdditiveCardBonusRate = (craftTargetCard: Card, additiveCard: Car
   return baseSuccessRate.times(base.exponentiatedBy(exponent))
 }
 
-export const successRateCalculate = (currentCraftRule:ICraftRule, craftTargetCard:Card, additiveCards: Array<Card>) => {
+export const successRateCalculate = (
+  currentCraftRule: ICraftRule,
+  craftTargetCard: Card,
+  additiveCards: Array<Card>,
+) => {
   if (!currentCraftRule || !craftTargetCard) return new BigNumber(0)
   const baseSuccessRate = new BigNumber(currentCraftRule.baseSuccessRate)
   const maxSuccessRate = new BigNumber(currentCraftRule.maxSuccessRate)

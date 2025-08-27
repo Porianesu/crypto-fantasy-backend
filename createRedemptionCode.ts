@@ -1,20 +1,11 @@
 import { PrismaClient } from '@prisma/client'
+import { generateRandomString } from './utils/common'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  // 生成10位随机兑换码
-  function generateRandomCode(length = 10) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    let result = ''
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return result
-  }
-
   // 手动配置兑换码参数
-  const code = generateRandomCode(10) // 生成10位随机兑换码
+  const code = generateRandomString(10) // 生成10位随机兑换码
   const solAmount = 100 // 兑换的 sol 数量
   const faithAmount = 200 // 兑换的 faith 数量
   const maxUses = 2 // 最大可兑换次数

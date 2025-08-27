@@ -13,7 +13,7 @@ export enum CARD_RARITY {
 }
 
 export const ReferralReward = {
-  invited: {
+  invitee: {
     solAmount: 50,
     faithAmount: 5000,
   },
