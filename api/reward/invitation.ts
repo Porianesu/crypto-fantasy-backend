@@ -30,17 +30,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     let inviteCode = user.inviteCode
     if (!inviteCode) {
-      // 自动生成唯一邀请码
-      let unique = false
-      let tryCount = 0
-      while (!unique && tryCount < 10) {
+      // 自动生成唯一邀请码，保证100%成功
+      while (true) {
         inviteCode = generateRandomString(8)
-        const exists = await prisma.user.findUnique({ where: { inviteCode } })
-        if (!exists) unique = true
-        tryCount++
+        try {
+          await prisma.user.update({ where: { id: user.id }, data: { inviteCode } })
+          break // 成功写入，跳出循环
+        } catch (err: any) {
+          // Prisma 唯一性冲突错误码
+          if (err.code === 'P2002') {
+            continue // 邀请码重复，重试
+          }
+          throw err // 其他错误直接抛出
+        }
       }
-      if (!unique) return res.status(500).json({ error: 'Failed to generate invite code' })
-      await prisma.user.update({ where: { id: user.id }, data: { inviteCode } })
     }
     // 查询邀请信息
     const invitations = await prisma.invitation.findMany({
