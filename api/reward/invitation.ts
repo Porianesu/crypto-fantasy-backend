@@ -53,7 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
     return res.status(200).json({
       inviteCode,
-      invitedUsers: invitations.map((i) => ({
+      invitations: invitations.map((i) => ({
         id: i.invitee.id,
         email: i.invitee.email,
         nickname: i.invitee.nickname,
