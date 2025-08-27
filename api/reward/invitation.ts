@@ -48,21 +48,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 查询邀请信息
     const invitations = await prisma.invitation.findMany({
       where: { inviterUserId: user.id },
-      include: { invitee: true },
       orderBy: { createdAt: 'asc' },
+    })
+    const invitationsAsInvitee = await prisma.invitation.findFirst({
+      where: { inviteeUserId: user.id },
     })
     return res.status(200).json({
       inviteCode,
-      invitations: invitations.map((i) => ({
-        id: i.invitee.id,
-        email: i.invitee.email,
-        nickname: i.invitee.nickname,
+      invitationsAsInviter: invitations.map((i) => ({
+        id: i.id,
         claimed: i.claimed,
         createdAt: i.createdAt,
       })),
-      hasUnclaimedRewardAsInvitee: !!(await prisma.invitation.findFirst({
-        where: { inviteeUserId: user.id, claimed: false },
-      })),
+      invitationsAsInvitee: invitationsAsInvitee
+        ? {
+            id: invitationsAsInvitee.id,
+            claimed: invitationsAsInvitee.claimed,
+            createdAt: invitationsAsInvitee.createdAt,
+          }
+        : null,
     })
   }
 
