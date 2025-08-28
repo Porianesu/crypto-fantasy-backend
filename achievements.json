@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "type": "card_collect",
+    "subType": "amount",
+    "target": 5,
+    "description": "Test test.",
+    "rewardSolAmount": 1,
+    "rewardFaithAmount": 100
+  },
+  {
+    "id": 2,
+    "type": "card_collect",
+    "subType": "epic",
+    "target": 5,
+    "description": "Epic card collector! Collect 5 epic cards.",
+    "rewardSolAmount": 5,
+    "rewardFaithAmount": 500
+  },
+  {
+    "id": 3,
+    "type": "deck_score",
+    "subType": "amount",
+    "target": 200,
+    "description": "Achieve a deck score of 200 points.",
+    "rewardSolAmount": 2,
+    "rewardFaithAmount": 200
+  },
+  {
+    "id": 4,
+    "type": "deck_score",
+    "subType": "rank",
+    "target": 5,
+    "description": "Achieve a deck rank of 5 or higher.",
+    "rewardSolAmount": 3,
+    "rewardFaithAmount": 300
+  },
+  {
+    "id": 5,
+    "type": "card_fusion",
+    "subType": "amount",
+    "target": 10,
+    "description": "Fuse 10 common cards to create a new card.",
+    "rewardSolAmount": 1,
+    "rewardFaithAmount": 100
+  },
+  {
+    "id": 6,
+    "type": "card_craft",
+    "subType": "amount",
+    "target": 10,
+    "description": "Craft 10 common cards to enhance your collection.",
+    "rewardSolAmount": 1,
+    "rewardFaithAmount": 100
+  },
+  {
+    "id": 7,
+    "type": "sol_consume",
+    "subType": "amount",
+    "target": 100,
+    "description": "Consume 100 SOL in total to support the game ecosystem.",
+    "rewardSolAmount": 10,
+    "rewardFaithAmount": 1000
+  },
+  {
+    "id": 8,
+    "type": "faith_consume",
+    "subType": "amount",
+    "target": 1000,
+    "description": "Consume 1000 Faith in total to support the game ecosystem.",
+    "rewardSolAmount": 1,
+    "rewardFaithAmount": 100
+  }
+]
