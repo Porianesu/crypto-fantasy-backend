@@ -8,7 +8,7 @@ async function handleAchievementCardsCollectWithSubtype(
   amount: number,
   tx?: Prisma.TransactionClient,
 ) {
-  await handleCountTypeAchievement({ user, amount, type: 'cards_collect', subType }, tx)
+  await handleCountTypeAchievement({ user, amount, type: 'card_collect', subType }, tx)
 }
 
 export async function handleAchievementCardsCollect(

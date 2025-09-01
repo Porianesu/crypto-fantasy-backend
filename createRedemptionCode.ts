@@ -6,8 +6,8 @@ const prisma = new PrismaClient()
 async function main() {
   // 手动配置兑换码参数
   const code = generateRandomString(10) // 生成10位随机兑换码
-  const solAmount = 100 // 兑换的 sol 数量
-  const faithAmount = 200 // 兑换的 faith 数量
+  const solAmount = 10 // 兑换的 sol 数量
+  const faithAmount = 2000 // 兑换的 faith 数量
   const maxUses = 2 // 最大可兑换次数
   const expiredAt = new Date('2025-12-31T23:59:59Z') // 过期时间
 
