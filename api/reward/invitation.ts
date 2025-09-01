@@ -83,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 检查是否已被邀请
     const alreadyBound = await prisma.invitation.findUnique({ where: { inviteeUserId: user.id } })
     if (alreadyBound) {
-      return res.status(400).json({ error: 'You have already been invited' })
+      return res.status(400).json({ error: 'You cannot accept the invitation again.' })
     }
     // 检查邀请码是否存在
     const inviter = await prisma.user.findUnique({ where: { inviteCode } })
