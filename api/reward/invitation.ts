@@ -3,7 +3,6 @@ import prisma from '../../prisma'
 import { verifyToken } from '../../utils/jwt'
 import { generateRandomString } from '../../utils/common'
 import { ReferralReward } from '../../utils/config'
-import { createInvitationWithCode } from '../../utils/invitation'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -75,17 +74,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 绑定邀请码
   if (req.method === 'POST') {
     const { inviteCode } = req.body
-    try {
-      const result = await prisma.$transaction(async (tx) => {
-        return await createInvitationWithCode(tx, user, inviteCode)
-      })
-      return res.status(200).json(result)
-    } catch (e) {
-      console.error('Error binding invite code:', e)
-      return res
-        .status(500)
-        .json({ error: e instanceof Error ? e.message : 'Failed to bind invite code' })
+    if (!inviteCode || typeof inviteCode !== 'string') {
+      return res.status(400).json({ error: 'Invalid inviteCode' })
     }
+    if (user.inviteCode === inviteCode) {
+      return res.status(400).json({ error: 'You cannot invite yourself' })
+    }
+    // 检查是否已被邀请
+    const alreadyBound = await prisma.invitation.findUnique({ where: { inviteeUserId: user.id } })
+    if (alreadyBound) {
+      return res.status(400).json({ error: 'You have already been invited' })
+    }
+    // 检查邀请码是否存在
+    const inviter = await prisma.user.findUnique({ where: { inviteCode } })
+    if (!inviter) {
+      return res.status(404).json({ error: 'Invite code not found' })
+    }
+    if (inviter.id === user.id) {
+      return res.status(400).json({ error: 'You cannot invite yourself' })
+    }
+    const result = await prisma.$transaction(async (tx) => {
+      // 创建邀请关系
+      await tx.invitation.create({
+        data: {
+          inviteeUserId: user.id,
+          inviterUserId: inviter.id,
+        },
+      })
+
+      //发放奖励
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          faithAmount: {
+            increment: ReferralReward.invitee.faithAmount,
+          },
+          solAmount: {
+            increment: ReferralReward.invitee.solAmount,
+          },
+        },
+      })
+      return {
+        success: true,
+        rewardFaithAmount: ReferralReward.invitee.faithAmount,
+        rewardSolAmount: ReferralReward.invitee.solAmount,
+      }
+    })
+    return res.status(200).json(result)
   }
 
   return res.status(405).json({ error: 'Method Not Allowed' })
