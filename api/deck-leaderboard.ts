@@ -16,17 +16,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const email = verifyToken(req)
-  if (!email) {
+  const user = await verifyToken(req)
+  if (!user) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // 查询用户
-      const user = await tx.user.findUnique({ where: { email } })
-      if (!user) {
-        throw new Error('User not found')
-      }
       const userId = user.id
 
       // 查询前50名排行榜

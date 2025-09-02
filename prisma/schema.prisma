@@ -12,8 +12,8 @@ datasource db {
 
 model User {
   id                  Int                @id @default(autoincrement())
-  email               String             @unique
-  password            String
+  email               String?            @unique // 可选，唯一
+  password            String? // 可选
   avatar              String?
   solAmount           Float              @default(0)
   createdAt           DateTime           @default(now())
@@ -35,6 +35,8 @@ model User {
   inviteCode          String?            @unique // 用户唯一邀请码，可选
   invitees            Invitation[]       @relation("InvitationInvitee")
   inviter             Invitation[]       @relation("InvitationInviter")
+  address             String?            @unique // 新增，钱包地址
+  nonce               String? // 新增，MetaMask 登录用
 }
 
 model Card {

@@ -19,15 +19,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // 校验token
-  const email = verifyToken(req)
-  if (!email) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-
-  // 查询用户
-  const user = await prisma.user.findUnique({ where: { email } })
+  const user = await verifyToken(req)
   if (!user) {
-    return res.status(404).json({ error: 'User not found' })
+    return res.status(404).json({ error: 'Unauthorized' })
   }
 
   // 查询所有卡牌
@@ -75,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const result = await prisma.$transaction(async (tx) => {
     // 扣减余额
     const updatedUser = await tx.user.update({
-      where: { email },
+      where: { id: userId },
       data: {
         solAmount: {
           decrement: costBN.toNumber(),

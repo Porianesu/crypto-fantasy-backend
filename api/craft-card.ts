@@ -31,11 +31,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
 
-  const email = verifyToken(req)
-  if (!email) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-
   const { craftCardId, requiredUserCardIds, additiveUserCardIds } = req.body
   if (
     !craftCardId ||
@@ -50,10 +45,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   }
 
-  // 通过 email 查询 userId
-  const user = await prisma.user.findUnique({ where: { email } })
+  const user = await verifyToken(req)
   if (!user) {
-    return res.status(401).json({ error: 'User not found' })
+    return res.status(401).json({ error: 'Unauthorized' })
   }
   // 校验 deckCards 是否有冲突
   if (user.deckCards && Array.isArray(user.deckCards)) {

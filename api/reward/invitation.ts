@@ -13,18 +13,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end()
   }
 
-  const email = verifyToken(req)
-  if (!email) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: {
-      invitees: { include: { invitee: true } },
-      inviter: { include: { inviter: true } },
-    },
-  })
-  if (!user) return res.status(401).json({ error: 'User not found' })
+  const user = await verifyToken(req)
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   // 查询邀请状态并自动生成邀请码
   if (req.method === 'GET') {
@@ -35,7 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         inviteCode = generateRandomString(8)
         try {
           await prisma.user.update({ where: { id: user.id }, data: { inviteCode } })
-          console.log(`Create invite code ${inviteCode} for user ${user.email}`)
+          console.log(`Create invite code ${inviteCode} for user ${user.id}`)
           break // 成功写入，跳出循环
         } catch (err: any) {
           // Prisma 唯一性冲突错误码

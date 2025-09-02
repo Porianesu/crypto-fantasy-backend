@@ -16,15 +16,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // 校验token
-  const email = verifyToken(req)
-  if (!email) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-
-  // 通过 email 查询 userId
-  const user = await prisma.user.findUnique({ where: { email } })
+  const user = await verifyToken(req)
   if (!user) {
-    return res.status(401).json({ error: 'User not found' })
+    return res.status(401).json({ error: 'Unauthorized' })
   }
   const userId = user.id
   if (user.meltCurrent <= 0) {

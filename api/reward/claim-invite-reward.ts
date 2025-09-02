@@ -15,12 +15,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
 
-  const email = verifyToken(req)
-  if (!email) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) return res.status(401).json({ error: 'User not found' })
+  const user = await verifyToken(req)
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   // 查询未领取的邀请奖励
   const unclaimedInvitations = await prisma.invitation.findMany({

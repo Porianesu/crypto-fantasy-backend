@@ -14,20 +14,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
 
-  const email = verifyToken(req)
-  if (!email) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-
   const { code } = req.body
   if (!code || typeof code !== 'string') {
     return res.status(400).json({ error: 'Invalid code' })
   }
 
-  // 查询用户
-  const user = await prisma.user.findUnique({ where: { email } })
+  const user = await verifyToken(req)
   if (!user) {
-    return res.status(401).json({ error: 'User not found' })
+    return res.status(401).json({ error: 'Unauthorized' })
   }
 
   // 查询兑换码

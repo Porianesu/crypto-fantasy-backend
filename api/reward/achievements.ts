@@ -11,12 +11,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end()
   }
 
-  const email = verifyToken(req)
-  if (!email) {
-    return res.status(401).json({ error: 'Unauthorized' })
-  }
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) return res.status(401).json({ error: 'User not found' })
+  const user = await verifyToken(req)
+  if (!user) return res.status(401).json({ error: 'Unauthorized' })
 
   // 查询所有成就及用户状态
   if (req.method === 'GET') {
