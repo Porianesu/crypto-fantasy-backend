@@ -46,9 +46,9 @@ export const successRateCalculate = (
   }
 }
 
-export function setCorsHeaders(res: VercelResponse) {
+export function setCorsHeaders(res: VercelResponse, allowMethods = 'GET,POST,OPTIONS') {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS,PATCH')
+  res.setHeader('Access-Control-Allow-Methods', allowMethods)
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
 }
 

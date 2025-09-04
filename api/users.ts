@@ -93,7 +93,7 @@ async function handleEmailAuth(req: VercelRequest, res: VercelResponse) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(res)
+  setCorsHeaders(res, 'POST,OPTIONS,PATCH')
   if (req.method === 'OPTIONS') return res.status(204).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
   try {
