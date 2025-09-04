@@ -16,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const user = await verifyToken(req)
   if (!user) {
-    return res.status(404).json({ error: 'Unauthorized' })
+    return res.status(401).json({ error: 'Unauthorized' })
   }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userData } = user

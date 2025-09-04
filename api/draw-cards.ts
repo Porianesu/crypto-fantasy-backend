@@ -21,7 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 校验token
   const user = await verifyToken(req)
   if (!user) {
-    return res.status(404).json({ error: 'Unauthorized' })
+    return res.status(401).json({ error: 'Unauthorized' })
   }
 
   // 查询所有卡牌
