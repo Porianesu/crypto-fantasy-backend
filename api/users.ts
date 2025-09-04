@@ -1,248 +1,110 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import bcrypt from 'bcryptjs'
 import { signToken, verifyToken } from '../utils/jwt'
-import { DefaultAvatars } from '../utils/config'
+import { setCorsHeaders, generateNickname, getRandomAvatar } from '../utils/common'
 import prisma from '../prisma'
 import { ethers } from 'ethers'
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 设置CORS头
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS,PATCH')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-
-  if (req.method === 'OPTIONS') {
-    // 预检请求直接返回204
-    return res.status(204).end()
+async function handleWalletAuth(req: VercelRequest, res: VercelResponse) {
+  const { address, signature, nonce } = req.body
+  if (!ethers.isAddress(address)) {
+    return res.status(400).json({ error: 'Invalid address format' })
   }
-  if (req.method === 'POST') {
-    try {
-      if (!req.body) {
-        return res.status(400).json({ error: 'Request body cannot be empty' })
-      }
-      // 钱包登录/注册分支
-      const { address, signature, nonce } = req.body
-      if (address && signature && nonce) {
-        // 校验 address 格式
-        if (!ethers.isAddress(address)) {
-          return res.status(400).json({ error: 'Invalid address format' })
-        }
-        // 查找用户
-        let user = await prisma.user.findUnique({ where: { address } })
-        // 注册流程
-        if (!user) {
-          // 校验签名
-          const valid =
-            ethers.verifyMessage(nonce, signature).toLowerCase() === address.toLowerCase()
-          if (!valid) {
-            return res.status(400).json({ error: 'Invalid signature' })
-          }
-          // 生成默认昵称
-          const batchSize = 20
-          let nickname = ''
-          let found = false
-          while (!found) {
-            const candidates = Array.from(
-              { length: batchSize },
-              () => `Adventurer_#${Math.floor(10000 + Math.random() * 90000)}`,
-            )
-            const existNicknames = await prisma.user.findMany({
-              where: { nickname: { in: candidates } },
-              select: { nickname: true },
-            })
-            const existSet = new Set(existNicknames.map((u) => u.nickname))
-            const available = candidates.filter((n) => !existSet.has(n))
-            if (available.length > 0) {
-              nickname = available[0]
-              found = true
-            }
-          }
-          const randomDefaultAvatar =
-            DefaultAvatars[Math.floor(Math.random() * DefaultAvatars.length)]
-          // 生成新 nonce
-          const newNonce = ethers.hexlify(ethers.randomBytes(16))
-          user = await prisma.user.create({
-            data: {
-              address,
-              nickname,
-              avatar: randomDefaultAvatar,
-              solAmount: 0,
-              hasAlreadyReadGuide: false,
-              faithAmount: 0,
-              expPercent: 0,
-              meltCurrent: 20,
-              meltMax: 20,
-              nonce: newNonce,
-            },
-          })
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { password: _, ...userData } = user
-          const token = signToken({
-            address: user.address!,
-          })
-          return res.status(200).json({
-            type: 'register',
-            token,
-            user: userData,
-          })
-        } else {
-          // 登录流程
-          if (!user.nonce) {
-            return res.status(400).json({ error: 'Nonce not found, please refresh and try again' })
-          }
-          const valid =
-            ethers.verifyMessage(user.nonce, signature).toLowerCase() === address.toLowerCase()
-          if (!valid) {
-            return res.status(400).json({ error: 'Invalid signature' })
-          }
-          // 登录成功，刷新 nonce
-          const newNonce = ethers.hexlify(ethers.randomBytes(16))
-          const updatedUser = await prisma.user.update({
-            where: { address },
-            data: { nonce: newNonce },
-          })
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { password: _, ...userData } = updatedUser
-          const token = signToken({
-            address: updatedUser.address!,
-          })
-          return res.status(200).json({
-            type: 'login',
-            token,
-            user: userData,
-          })
-        }
-      }
-      const { email, password } = req.body
-      if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password cannot be empty' })
-      }
-      // 查找用户
-      const exist = await prisma.user.findUnique({ where: { email } })
-      if (!exist) {
-        // 邮箱格式校验
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (typeof email !== 'string' || !emailRegex.test(email)) {
-          return res.status(400).json({ error: 'Invalid email format' })
-        }
-        // 密码长度和类型校验
-        if (typeof password !== 'string' || password.length < 6 || password.length > 32) {
-          return res.status(400).json({ error: 'Password length must be 6-32 characters' })
-        }
-        // 注册流程前生成唯一昵称
-        // 优化昵称生成逻辑
-        const batchSize = 20
-        let nickname: string = ''
-        let found = false
-        while (!found) {
-          // 批量生成昵称
-          const candidates = Array.from(
-            { length: batchSize },
-            () => `Adventure_#${Math.floor(10000 + Math.random() * 90000)}`,
-          )
-          // 查询已存在的昵称
-          const existNicknames = await prisma.user.findMany({
-            where: { nickname: { in: candidates } },
-            select: { nickname: true },
-          })
-          const existSet = new Set(existNicknames.map((u) => u.nickname))
-          // 选出未被使用的昵称
-          const available = candidates.filter((n) => !existSet.has(n))
-          if (available.length > 0) {
-            nickname = available[0]
-            found = true
-          }
-        }
-        // 注册流程
-        const hash = await bcrypt.hash(password, 10)
-        const randomDefaultAvatar =
-          DefaultAvatars[Math.floor(Math.random() * DefaultAvatars.length)]
-        const user = await prisma.user.create({
-          data: {
-            email,
-            avatar: randomDefaultAvatar,
-            password: hash,
-            solAmount: 0,
-            hasAlreadyReadGuide: false,
-            faithAmount: 0,
-            expPercent: 0,
-            meltCurrent: 20,
-            meltMax: 20,
-            nickname,
-          },
-        })
-        // 不返回密码
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password: _, ...userData } = user
-        // 生成token
-        const token = signToken({ email: user.email! })
-        return res.status(200).json({
-          type: 'register',
-          token,
-          user: userData,
-        })
-      } else {
-        // 登录流程
-        const valid = await bcrypt.compare(password, exist.password!)
-        if (!valid) {
-          return res.status(400).json({ error: 'Incorrect password' })
-        }
-        // 不返回密码
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password: _, ...userData } = exist
-        // 生成token
-        const token = signToken({ email: exist.email! })
-        return res.status(200).json({
-          type: 'login',
-          token,
-          user: userData,
-        })
-      }
-    } catch (error) {
-      console.log('get users error', error)
-      res.status(500).json({ error: 'Operation failed' })
+  let user = await prisma.user.findUnique({ where: { address } })
+  if (!user) {
+    // 校验签名
+    const valid = ethers.verifyMessage(nonce, signature).toLowerCase() === address.toLowerCase()
+    if (!valid) {
+      return res.status(400).json({ error: 'Invalid signature' })
     }
-  } else if (req.method === 'PATCH') {
-    try {
-      const { nickname, avatar } = req.body
-      if (!nickname && !avatar) {
-        return res.status(400).json({ error: 'Invalid request body' })
-      }
-      // 校验 token
-      const user = await verifyToken(req)
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' })
-      }
-      // 检查 nickname 是否重复
-      if (nickname) {
-        if (nickname.length < 2 || nickname.length > 20) {
-          return res.status(400).json({ error: 'Nickname must be 2-20 characters' })
-        }
-        const exist = await prisma.user.findFirst({ where: { nickname, id: { not: user.id } } })
-        if (exist) {
-          return res.status(409).json({ error: 'Nickname already exists' })
-        }
-      }
-      if (avatar && !DefaultAvatars.includes(avatar)) {
-        return res.status(400).json({ error: 'Invalid avatar' })
-      }
-      // 更新用户信息
-      const updatedUser = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          ...(nickname ? { nickname } : {}),
-          ...(avatar ? { avatar } : {}),
-        },
-      })
-      // 去除 password 字段
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...userData } = updatedUser
-      res.status(200).json({ user: userData })
-    } catch (error) {
-      console.log('update user error', error)
-      res.status(500).json({ error: 'Something went wrong' })
-    }
+    const nickname = await generateNickname()
+    const avatar = getRandomAvatar()
+    const newNonce = ethers.hexlify(ethers.randomBytes(16))
+    user = await prisma.user.create({
+      data: {
+        address,
+        nickname,
+        avatar,
+        solAmount: 0,
+        hasAlreadyReadGuide: false,
+        faithAmount: 0,
+        expPercent: 0,
+        meltCurrent: 20,
+        meltMax: 20,
+        nonce: newNonce,
+      },
+    })
+    const { password: _, ...userData } = user
+    const token = signToken({ address: user.address! })
+    return res.status(200).json({ type: 'register', token, user: userData })
   } else {
-    res.status(405).json({ error: 'Method Not Allowed' })
+    if (!user.nonce) {
+      return res.status(400).json({ error: 'Nonce not found, please refresh and try again' })
+    }
+    const valid =
+      ethers.verifyMessage(user.nonce, signature).toLowerCase() === address.toLowerCase()
+    if (!valid) {
+      return res.status(400).json({ error: 'Invalid signature' })
+    }
+    const newNonce = ethers.hexlify(ethers.randomBytes(16))
+    const updatedUser = await prisma.user.update({ where: { address }, data: { nonce: newNonce } })
+    const { password: _, ...userData } = updatedUser
+    const token = signToken({ address: updatedUser.address! })
+    return res.status(200).json({ type: 'login', token, user: userData })
+  }
+}
+
+async function handleEmailAuth(req: VercelRequest, res: VercelResponse) {
+  const { email, password } = req.body
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password cannot be empty' })
+  }
+  const exist = await prisma.user.findUnique({ where: { email } })
+  if (!exist) {
+    const nickname = await generateNickname()
+    const avatar = getRandomAvatar()
+    const hash = await bcrypt.hash(password, 10)
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hash,
+        nickname,
+        avatar,
+        solAmount: 0,
+        hasAlreadyReadGuide: false,
+        faithAmount: 0,
+        expPercent: 0,
+        meltCurrent: 20,
+        meltMax: 20,
+      },
+    })
+    const { password: _, ...userData } = user
+    const token = signToken({ email: user.email! })
+    return res.status(200).json({ type: 'register', token, user: userData })
+  } else {
+    const valid = await bcrypt.compare(password, exist.password || '')
+    if (!valid) {
+      return res.status(400).json({ error: 'Incorrect password' })
+    }
+    const { password: _, ...userData } = exist
+    const token = signToken({ email: exist.email! })
+    return res.status(200).json({ type: 'login', token, user: userData })
+  }
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  setCorsHeaders(res)
+  if (req.method === 'OPTIONS') return res.status(204).end()
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+  try {
+    if (req.body && req.body.address && req.body.signature && req.body.nonce) {
+      return await handleWalletAuth(req, res)
+    } else if (req.body && req.body.email && req.body.password) {
+      return await handleEmailAuth(req, res)
+    } else {
+      return res.status(400).json({ error: 'Invalid request' })
+    }
+  } catch (e) {
+    return res.status(500).json({ error: 'Internal server error' })
   }
 }

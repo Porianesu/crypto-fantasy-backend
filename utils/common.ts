@@ -1,6 +1,8 @@
 import { Card } from '@prisma/client'
-import { ICraftRule } from './config'
+import { ICraftRule, DefaultAvatars } from './config'
 import { BigNumber } from 'bignumber.js'
+import prisma from '../prisma'
+import { VercelResponse } from '@vercel/node'
 
 export const generateRandomString = (length = 8) => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -42,4 +44,37 @@ export const successRateCalculate = (
   } else {
     return finalSuccessRate
   }
+}
+
+export function setCorsHeaders(res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS,PATCH')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+}
+
+export async function generateNickname(): Promise<string> {
+  const batchSize = 20
+  let nickname = ''
+  let found = false
+  while (!found) {
+    const candidates = Array.from(
+      { length: batchSize },
+      () => `Adventurer_#${Math.floor(10000 + Math.random() * 90000)}`,
+    )
+    const existNicknames = await prisma.user.findMany({
+      where: { nickname: { in: candidates } },
+      select: { nickname: true },
+    })
+    const existSet = new Set(existNicknames.map((u) => u.nickname))
+    const available = candidates.filter((n) => !existSet.has(n))
+    if (available.length > 0) {
+      nickname = available[0]
+      found = true
+    }
+  }
+  return nickname
+}
+
+export function getRandomAvatar(): string {
+  return DefaultAvatars[Math.floor(Math.random() * DefaultAvatars.length)]
 }
