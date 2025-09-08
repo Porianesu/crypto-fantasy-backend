@@ -1,6 +1,68 @@
 import { Achievement, Prisma, User, UserAchievement } from '@prisma/client'
 import prisma from '../../prisma'
 
+const findUnfinishedAchievementAndUserAchievement = async (
+  allAchievements: Array<Achievement>,
+  tx: Prisma.TransactionClient,
+  userId: User['id'],
+  type: 'desc' | 'asc' = 'asc',
+) => {
+  // 找到未完成且target最小的成就
+  let unfinishedAchievement: Achievement | undefined = undefined
+  let unfinishedUserAchievement: UserAchievement | null = null
+  for (const a of allAchievements.sort((a, b) => {
+    return type === 'asc' ? a.target - b.target : b.target - a.target
+  })) {
+    const userAch = await tx.userAchievement.findFirst({
+      where: {
+        userId: userId,
+        achievementId: a.id,
+      },
+    })
+    // status: 0 表示未完成，1 表示已完成，2 表示已领取（根据你的实际定义调整）
+    if (!userAch || userAch.status === 0) {
+      unfinishedAchievement = a
+      unfinishedUserAchievement = userAch
+      break
+    }
+  }
+  return {
+    unfinishedAchievement,
+    unfinishedUserAchievement,
+  }
+}
+
+const calculateAchievementData = (
+  amount: number,
+  unfinishedUserAchievement: UserAchievement,
+  unfinishedAchievement: Achievement,
+  subType: string,
+) => {
+  let newAchievementProgress
+  let nextAchievementProgress
+
+  switch (subType) {
+    case 'rank_desc':
+      newAchievementProgress = amount
+      nextAchievementProgress = Math.max(newAchievementProgress, unfinishedAchievement.target)
+      break
+    case 'rank_asc':
+      newAchievementProgress = amount
+      nextAchievementProgress = Math.min(newAchievementProgress, unfinishedAchievement.target)
+      break
+    case 'amount':
+    default:
+      newAchievementProgress = amount + (unfinishedUserAchievement?.progress || 0)
+      nextAchievementProgress = Math.min(newAchievementProgress, unfinishedAchievement.target)
+  }
+  const nextAchievementStatus = nextAchievementProgress === unfinishedAchievement.target ? 1 : 0
+  return {
+    newAchievementProgress,
+    nextAchievementProgress,
+    nextAchievementStatus,
+  }
+}
+
 const handleCountTypeAchievementLogic = async (
   tx: Prisma.TransactionClient,
   user: User,
@@ -28,31 +90,20 @@ const handleCountTypeAchievementLogic = async (
     return
   }
 
-  // 找到未完成且target最小的成就
-  let unfinishedAchievement: Achievement | undefined = undefined
-  let unfinishedUserAchievement: UserAchievement | null = null
-  for (const a of allAchievements.sort((a, b) => a.target - b.target)) {
-    const userAch = await tx.userAchievement.findFirst({
-      where: {
-        userId: userId,
-        achievementId: a.id,
-      },
-    })
-    // status: 0 表示未完成，1 表示已完成，2 表示已领取（根据你的实际定义调整）
-    if (!userAch || userAch.status === 0) {
-      unfinishedAchievement = a
-      unfinishedUserAchievement = userAch
-      break
-    }
-  }
+  const { unfinishedAchievement, unfinishedUserAchievement } =
+    await findUnfinishedAchievementAndUserAchievement(
+      allAchievements,
+      tx,
+      userId,
+      subType === 'rank_desc' ? 'desc' : 'asc',
+    )
 
   if (!unfinishedAchievement) {
     console.log(`User ${user.email} finished all achievements in ${type}(${subType})`)
     return
   }
-  const newAchievementProgress = amount + (unfinishedUserAchievement?.progress || 0)
-  const nextAchievementProgress = Math.min(newAchievementProgress, unfinishedAchievement.target)
-  const nextAchievementStatus = nextAchievementProgress === unfinishedAchievement.target ? 1 : 0
+  const { newAchievementProgress, nextAchievementProgress, nextAchievementStatus } =
+    calculateAchievementData(amount, unfinishedUserAchievement!, unfinishedAchievement, subType)
 
   if (unfinishedUserAchievement) {
     console.log(`Achievement update for ${user.email} in ${type}(${subType}):`, {
