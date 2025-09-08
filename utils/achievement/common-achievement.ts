@@ -129,14 +129,14 @@ const handleCountTypeAchievementLogic = async (
     )
 
   if (!unfinishedAchievement) {
-    console.log(`User ${user.email} finished all achievements in ${type}(${subType})`)
+    console.log(`User ${user.id} finished all achievements in ${type}(${subType})`)
     return
   }
   const { newAchievementProgress, nextAchievementProgress, nextAchievementStatus } =
     calculateAchievementData(amount, unfinishedUserAchievement!, unfinishedAchievement, subType)
 
   if (unfinishedUserAchievement) {
-    console.log(`Achievement update for ${user.email} in ${type}(${subType}):`, {
+    console.log(`Achievement update for ${user.id} in ${type}(${subType}):`, {
       progress: nextAchievementProgress,
       status: nextAchievementStatus,
     })
@@ -151,7 +151,7 @@ const handleCountTypeAchievementLogic = async (
       },
     })
   } else {
-    console.log(`Achievement create for ${user.email} in ${type}(${subType}):`, {
+    console.log(`Achievement create for ${user.id} in ${type}(${subType}):`, {
       progress: nextAchievementProgress,
       status: nextAchievementStatus,
     })
