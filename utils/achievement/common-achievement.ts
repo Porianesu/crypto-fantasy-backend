@@ -40,26 +40,56 @@ const calculateAchievementData = (
 ) => {
   let newAchievementProgress
   let nextAchievementProgress
+  let nextAchievementStatus
 
   switch (subType) {
     case 'rank_desc':
       newAchievementProgress = amount
       nextAchievementProgress = Math.max(newAchievementProgress, unfinishedAchievement.target)
+      nextAchievementStatus = nextAchievementProgress <= unfinishedAchievement.target ? 1 : 0
       break
     case 'rank_asc':
       newAchievementProgress = amount
       nextAchievementProgress = Math.min(newAchievementProgress, unfinishedAchievement.target)
+      nextAchievementStatus = nextAchievementProgress >= unfinishedAchievement.target ? 1 : 0
       break
     case 'amount':
     default:
       newAchievementProgress = amount + (unfinishedUserAchievement?.progress || 0)
       nextAchievementProgress = Math.min(newAchievementProgress, unfinishedAchievement.target)
+      nextAchievementStatus = nextAchievementProgress === unfinishedAchievement.target ? 1 : 0
   }
-  const nextAchievementStatus = nextAchievementProgress === unfinishedAchievement.target ? 1 : 0
   return {
     newAchievementProgress,
     nextAchievementProgress,
     nextAchievementStatus,
+  }
+}
+
+const calculateShouldContinueToNextAchievementAndAmount = (
+  newAchievementProgress: number,
+  unfinishedAchievement: Achievement,
+  subType: Achievement['subType'],
+) => {
+  let shouldContinue
+  let nextAchievementAmount
+  switch (subType) {
+    case 'rank_desc':
+      shouldContinue = newAchievementProgress < unfinishedAchievement.target
+      nextAchievementAmount = newAchievementProgress
+      break
+    case 'rank_asc':
+      shouldContinue = newAchievementProgress > unfinishedAchievement.target
+      nextAchievementAmount = newAchievementProgress
+      break
+    case 'amount':
+    default:
+      shouldContinue = newAchievementProgress > unfinishedAchievement.target
+      nextAchievementAmount = newAchievementProgress - unfinishedAchievement.target
+  }
+  return {
+    shouldContinue,
+    nextAchievementAmount,
   }
 }
 
@@ -135,15 +165,21 @@ const handleCountTypeAchievementLogic = async (
       },
     })
   }
-  if (newAchievementProgress > unfinishedAchievement.target) {
+  const { shouldContinue, nextAchievementAmount } =
+    calculateShouldContinueToNextAchievementAndAmount(
+      newAchievementProgress,
+      unfinishedAchievement,
+      subType,
+    )
+  if (shouldContinue) {
     console.log('Continue to next achievement:', {
-      remainingAmount: newAchievementProgress - unfinishedAchievement.target,
+      nextAchievementAmount,
     })
     // 递归推进下一个阶梯成就，递归也要在事务内
     await handleCountTypeAchievementLogic(
       tx,
       user,
-      newAchievementProgress - unfinishedAchievement.target,
+      nextAchievementAmount,
       type,
       subType,
       recursiveProtection + 1,

@@ -1,4 +1,4 @@
-import { Achievement, Prisma, User, UserAchievement } from '@prisma/client'
+import { Prisma, User } from '@prisma/client'
 import { handleCountTypeAchievement } from './common-achievement'
 
 export const handleAchievementDeckScore = async (
