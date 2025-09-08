@@ -160,3 +160,12 @@ model Invitation {
   invitee       User     @relation("InvitationInvitee", fields: [inviteeUserId], references: [id])
   inviter       User     @relation("InvitationInviter", fields: [inviterUserId], references: [id])
 }
+
+model EmailVerificationCode {
+  id        Int      @id @default(autoincrement())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
