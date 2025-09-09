@@ -22,7 +22,7 @@
     "type": "card_fusion",
     "subType": "amount",
     "target": 10,
-    "description": "Fuse 10 cards to create a new card.",
+    "description": "Melt 10 cards.",
     "rewardSolAmount": 2,
     "rewardFaithAmount": 200
   },
@@ -67,7 +67,7 @@
     "type": "card_craft",
     "subType": "amount",
     "target": 1,
-    "description": "Craft a card to enhance your collection.",
+    "description": "Craft a card.",
     "rewardSolAmount": 1,
     "rewardFaithAmount": 100
   },
@@ -112,7 +112,7 @@
     "type": "card_fusion",
     "subType": "amount",
     "target": 2,
-    "description": "Fuse 2 cards to create a new card.",
+    "description": "Melt 2 cards.",
     "rewardSolAmount": 1,
     "rewardFaithAmount": 100
   },
@@ -121,7 +121,7 @@
     "type": "card_fusion",
     "subType": "amount",
     "target": 100,
-    "description": "Fuse 100 cards to create a new card.",
+    "description": "Melt 100 cards.",
     "rewardSolAmount": 10,
     "rewardFaithAmount": 1000
   },
@@ -175,7 +175,7 @@
     "type": "card_craft",
     "subType": "amount",
     "target": 5,
-    "description": "Craft 5 cards to enhance your collection.",
+    "description": "Craft 5 cards.",
     "rewardSolAmount": 2,
     "rewardFaithAmount": 200
   },
@@ -184,7 +184,7 @@
     "type": "card_craft",
     "subType": "amount",
     "target": 100,
-    "description": "Craft 100 cards to enhance your collection.",
+    "description": "Craft 100 cards.",
     "rewardSolAmount": 10,
     "rewardFaithAmount": 1000
   },
