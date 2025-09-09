@@ -55,9 +55,23 @@ async function handleWalletAuth(req: VercelRequest, res: VercelResponse) {
 }
 
 async function handleEmailAuth(req: VercelRequest, res: VercelResponse) {
-  const { email, password } = req.body
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password cannot be empty' })
+  const { email, password, code } = req.body
+  if (!email || !password || !code) {
+    return res
+      .status(400)
+      .json({ error: 'Email, password and verification code should not be empty' })
+  }
+  const now = new Date()
+  const validCode = await prisma.emailVerificationCode.findFirst({
+    where: {
+      email,
+      code,
+      expiresAt: { gt: now },
+    },
+    orderBy: { expiresAt: 'desc' },
+  })
+  if (!validCode) {
+    return res.status(400).json({ error: 'Invalid or expired verification code' })
   }
   const exist = await prisma.user.findUnique({ where: { email } })
   if (!exist) {

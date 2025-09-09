@@ -25,6 +25,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (existingCode) {
       code = existingCode.code
     } else {
+      // 先删除该邮箱下所有验证码
+      await tx.emailVerificationCode.deleteMany({
+        where: { email },
+      })
       code = generateRandomString(6)
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000)
       await tx.emailVerificationCode.create({
