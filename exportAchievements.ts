@@ -26,21 +26,9 @@ async function exportAchievementsToJson(type?: string, subType?: string) {
 
   // 读取原有 achievements.json
   const jsonPath = path.resolve(__dirname, 'achievements.json')
-  let achievements: any[] = []
-  if (fs.existsSync(jsonPath)) {
-    achievements = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'))
-  }
 
   // 合并并去重（以 type, subType, target 为唯一标识）
-  const merged = [
-    ...achievements.filter(
-      (a) =>
-        !achievementsFromDb.some(
-          (b) => a.type === b.type && a.subType === b.subType && a.target === b.target,
-        ),
-    ),
-    ...achievementsFromDb,
-  ]
+  const merged = [...achievementsFromDb]
 
   fs.writeFileSync(jsonPath, JSON.stringify(merged, null, 2), 'utf-8')
   console.log('Achievements exported to achievements.json')

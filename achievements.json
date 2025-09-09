@@ -9,6 +9,33 @@
     "rewardFaithAmount": 100
   },
   {
+    "id": 59,
+    "type": "card_collect",
+    "subType": "amount",
+    "target": 200,
+    "description": "Collect 200 cards.",
+    "rewardSolAmount": 20,
+    "rewardFaithAmount": 2000
+  },
+  {
+    "id": 63,
+    "type": "card_fusion",
+    "subType": "amount",
+    "target": 10,
+    "description": "Fuse 10 cards to create a new card.",
+    "rewardSolAmount": 2,
+    "rewardFaithAmount": 200
+  },
+  {
+    "id": 65,
+    "type": "card_collect",
+    "subType": "amount",
+    "target": 1000,
+    "description": "Collect 1000 cards.",
+    "rewardSolAmount": 50,
+    "rewardFaithAmount": 5000
+  },
+  {
     "id": 2,
     "type": "card_collect",
     "subType": "legendary",
@@ -18,31 +45,22 @@
     "rewardFaithAmount": 1000
   },
   {
-    "id": 3,
-    "type": "deck_score",
+    "id": 8,
+    "type": "faith_consume",
     "subType": "amount",
-    "target": 100,
-    "description": "Achieve a deck score of 100 points.",
+    "target": 1000,
+    "description": "Consume 1000 Faith coin in total.",
     "rewardSolAmount": 1,
     "rewardFaithAmount": 100
   },
   {
-    "id": 4,
-    "type": "deck_score",
-    "subType": "rank",
-    "target": 10,
-    "description": "Achieve a deck rank of 10 or higher.",
-    "rewardSolAmount": 1,
-    "rewardFaithAmount": 100
-  },
-  {
-    "id": 5,
-    "type": "card_fusion",
-    "subType": "amount",
-    "target": 2,
-    "description": "Fuse 2 cards to create a new card.",
-    "rewardSolAmount": 1,
-    "rewardFaithAmount": 100
+    "id": 68,
+    "type": "card_collect",
+    "subType": "epic",
+    "target": 1,
+    "description": "Collect a epic card.",
+    "rewardSolAmount": 5,
+    "rewardFaithAmount": 500
   },
   {
     "id": 6,
@@ -63,15 +81,7 @@
     "rewardFaithAmount": 100
   },
   {
-    "id": 8,
-    "type": "faith_consume",
-    "subType": "amount",
-    "target": 1000,
-    "description": "Consume 1000 Faith coin in total.",
-    "rewardSolAmount": 1,
-    "rewardFaithAmount": 100
-  },
-  {
+    "id": 70,
     "type": "card_collect",
     "subType": "amount",
     "target": 50,
@@ -80,30 +90,7 @@
     "rewardFaithAmount": 500
   },
   {
-    "type": "card_collect",
-    "subType": "amount",
-    "target": 100,
-    "description": "Collect 100 cards.",
-    "rewardSolAmount": 10,
-    "rewardFaithAmount": 1000
-  },
-  {
-    "type": "card_collect",
-    "subType": "amount",
-    "target": 200,
-    "description": "Collect 200 cards.",
-    "rewardSolAmount": 20,
-    "rewardFaithAmount": 2000
-  },
-  {
-    "type": "card_collect",
-    "subType": "amount",
-    "target": 1000,
-    "description": "Collect 1000 cards.",
-    "rewardSolAmount": 50,
-    "rewardFaithAmount": 5000
-  },
-  {
+    "id": 71,
     "type": "card_collect",
     "subType": "amount",
     "target": 10000,
@@ -112,110 +99,25 @@
     "rewardFaithAmount": 10000
   },
   {
+    "id": 72,
     "type": "card_collect",
-    "subType": "epic",
-    "target": 1,
-    "description": "Collect a epic card.",
-    "rewardSolAmount": 5,
-    "rewardFaithAmount": 500
-  },
-  {
-    "type": "card_collect",
-    "subType": "rare",
-    "target": 1,
-    "description": "Collect a rare card.",
-    "rewardSolAmount": 1,
-    "rewardFaithAmount": 100
-  },
-  {
-    "type": "card_collect",
-    "subType": "common",
-    "target": 1,
-    "description": "Collect a common card.",
-    "rewardSolAmount": 1,
-    "rewardFaithAmount": 100
-  },
-  {
-    "type": "deck_score",
     "subType": "amount",
-    "target": 200,
-    "description": "Achieve a deck score of 200 points.",
-    "rewardSolAmount": 2,
-    "rewardFaithAmount": 200
-  },
-  {
-    "type": "deck_score",
-    "subType": "amount",
-    "target": 300,
-    "description": "Achieve a deck score of 300 points.",
-    "rewardSolAmount": 3,
-    "rewardFaithAmount": 300
-  },
-  {
-    "type": "deck_score",
-    "subType": "amount",
-    "target": 400,
-    "description": "Achieve a deck score of 400 points.",
-    "rewardSolAmount": 4,
-    "rewardFaithAmount": 400
-  },
-  {
-    "type": "deck_score",
-    "subType": "amount",
-    "target": 495,
-    "description": "Achieve a deck score of 495 points.",
+    "target": 100,
+    "description": "Collect 100 cards.",
     "rewardSolAmount": 10,
     "rewardFaithAmount": 1000
   },
   {
-    "type": "deck_score",
-    "subType": "rank",
-    "target": 5,
-    "description": "Achieve a deck rank of 5 or higher.",
-    "rewardSolAmount": 2,
-    "rewardFaithAmount": 200
-  },
-  {
-    "type": "deck_score",
-    "subType": "rank",
-    "target": 3,
-    "description": "Achieve a deck rank of 3 or higher.",
-    "rewardSolAmount": 5,
-    "rewardFaithAmount": 500
-  },
-  {
-    "type": "deck_score",
-    "subType": "rank",
-    "target": 2,
-    "description": "Achieve a deck rank of 2 or higher.",
-    "rewardSolAmount": 10,
-    "rewardFaithAmount": 1000
-  },
-  {
-    "type": "deck_score",
-    "subType": "rank",
-    "target": 1,
-    "description": "Achieve a deck rank of 1 or higher.",
-    "rewardSolAmount": 20,
-    "rewardFaithAmount": 2000
-  },
-  {
+    "id": 5,
     "type": "card_fusion",
     "subType": "amount",
-    "target": 10,
-    "description": "Fuse 10 cards to create a new card.",
-    "rewardSolAmount": 2,
-    "rewardFaithAmount": 200
+    "target": 2,
+    "description": "Fuse 2 cards to create a new card.",
+    "rewardSolAmount": 1,
+    "rewardFaithAmount": 100
   },
   {
-    "type": "card_craft",
-    "subType": "amount",
-    "target": 5,
-    "description": "Craft 5 cards to enhance your collection.",
-    "rewardSolAmount": 2,
-    "rewardFaithAmount": 200
-  },
-  {
+    "id": 75,
     "type": "card_fusion",
     "subType": "amount",
     "target": 100,
@@ -224,30 +126,7 @@
     "rewardFaithAmount": 1000
   },
   {
-    "type": "card_craft",
-    "subType": "amount",
-    "target": 100,
-    "description": "Craft 100 cards to enhance your collection.",
-    "rewardSolAmount": 10,
-    "rewardFaithAmount": 1000
-  },
-  {
-    "type": "sol_consume",
-    "subType": "amount",
-    "target": 5,
-    "description": "Consume 5 SOL in total.",
-    "rewardSolAmount": 2,
-    "rewardFaithAmount": 200
-  },
-  {
-    "type": "faith_consume",
-    "subType": "amount",
-    "target": 5000,
-    "description": "Consume 5000 Faithcoin in total.",
-    "rewardSolAmount": 2,
-    "rewardFaithAmount": 200
-  },
-  {
+    "id": 76,
     "type": "sol_consume",
     "subType": "amount",
     "target": 10,
@@ -256,14 +135,16 @@
     "rewardFaithAmount": 500
   },
   {
-    "type": "faith_consume",
-    "subType": "amount",
-    "target": 10000,
-    "description": "Consume 10000 Faithcoin in total.",
-    "rewardSolAmount": 5,
-    "rewardFaithAmount": 500
+    "id": 77,
+    "type": "card_collect",
+    "subType": "rare",
+    "target": 1,
+    "description": "Collect a rare card.",
+    "rewardSolAmount": 1,
+    "rewardFaithAmount": 100
   },
   {
+    "id": 78,
     "type": "sol_consume",
     "subType": "amount",
     "target": 100,
@@ -272,14 +153,16 @@
     "rewardFaithAmount": 1000
   },
   {
+    "id": 79,
     "type": "faith_consume",
     "subType": "amount",
-    "target": 10000,
-    "description": "Consume 10000 Faithcoin in total.",
-    "rewardSolAmount": 10,
-    "rewardFaithAmount": 1000
+    "target": 5000,
+    "description": "Consume 5000 Faithcoin in total.",
+    "rewardSolAmount": 2,
+    "rewardFaithAmount": 200
   },
   {
+    "id": 80,
     "type": "sol_consume",
     "subType": "amount",
     "target": 1000,
@@ -288,11 +171,156 @@
     "rewardFaithAmount": 10000
   },
   {
+    "id": 81,
+    "type": "card_craft",
+    "subType": "amount",
+    "target": 5,
+    "description": "Craft 5 cards to enhance your collection.",
+    "rewardSolAmount": 2,
+    "rewardFaithAmount": 200
+  },
+  {
+    "id": 82,
+    "type": "card_craft",
+    "subType": "amount",
+    "target": 100,
+    "description": "Craft 100 cards to enhance your collection.",
+    "rewardSolAmount": 10,
+    "rewardFaithAmount": 1000
+  },
+  {
+    "id": 83,
+    "type": "sol_consume",
+    "subType": "amount",
+    "target": 5,
+    "description": "Consume 5 SOL in total.",
+    "rewardSolAmount": 2,
+    "rewardFaithAmount": 200
+  },
+  {
+    "id": 84,
+    "type": "faith_consume",
+    "subType": "amount",
+    "target": 10000,
+    "description": "Consume 10000 Faithcoin in total.",
+    "rewardSolAmount": 5,
+    "rewardFaithAmount": 500
+  },
+  {
+    "id": 85,
     "type": "faith_consume",
     "subType": "amount",
     "target": 100000,
     "description": "Consume 100000 Faithcoin in total.",
     "rewardSolAmount": 100,
     "rewardFaithAmount": 10000
+  },
+  {
+    "id": 73,
+    "type": "card_collect",
+    "subType": "normal",
+    "target": 1,
+    "description": "Collect a common card.",
+    "rewardSolAmount": 1,
+    "rewardFaithAmount": 100
+  },
+  {
+    "id": 86,
+    "type": "faith_consume",
+    "subType": "amount",
+    "target": 50000,
+    "description": "Consume 50000 Faithcoin in total.",
+    "rewardSolAmount": 10,
+    "rewardFaithAmount": 1000
+  },
+  {
+    "id": 4,
+    "type": "deck_score",
+    "subType": "rank_desc",
+    "target": 10,
+    "description": "Achieve a deck rank of 10 or higher.",
+    "rewardSolAmount": 1,
+    "rewardFaithAmount": 100
+  },
+  {
+    "id": 61,
+    "type": "deck_score",
+    "subType": "rank_desc",
+    "target": 5,
+    "description": "Achieve a deck rank of 5 or higher.",
+    "rewardSolAmount": 2,
+    "rewardFaithAmount": 200
+  },
+  {
+    "id": 62,
+    "type": "deck_score",
+    "subType": "rank_desc",
+    "target": 2,
+    "description": "Achieve a deck rank of 2 or higher.",
+    "rewardSolAmount": 10,
+    "rewardFaithAmount": 1000
+  },
+  {
+    "id": 64,
+    "type": "deck_score",
+    "subType": "rank_desc",
+    "target": 3,
+    "description": "Achieve a deck rank of 3 or higher.",
+    "rewardSolAmount": 5,
+    "rewardFaithAmount": 500
+  },
+  {
+    "id": 74,
+    "type": "deck_score",
+    "subType": "rank_desc",
+    "target": 1,
+    "description": "Achieve a deck rank of 1 or higher.",
+    "rewardSolAmount": 20,
+    "rewardFaithAmount": 2000
+  },
+  {
+    "id": 3,
+    "type": "deck_score",
+    "subType": "rank_asc",
+    "target": 100,
+    "description": "Achieve a deck score of 100 points.",
+    "rewardSolAmount": 1,
+    "rewardFaithAmount": 100
+  },
+  {
+    "id": 60,
+    "type": "deck_score",
+    "subType": "rank_asc",
+    "target": 495,
+    "description": "Achieve a deck score of 495 points.",
+    "rewardSolAmount": 10,
+    "rewardFaithAmount": 1000
+  },
+  {
+    "id": 66,
+    "type": "deck_score",
+    "subType": "rank_asc",
+    "target": 400,
+    "description": "Achieve a deck score of 400 points.",
+    "rewardSolAmount": 4,
+    "rewardFaithAmount": 400
+  },
+  {
+    "id": 67,
+    "type": "deck_score",
+    "subType": "rank_asc",
+    "target": 300,
+    "description": "Achieve a deck score of 300 points.",
+    "rewardSolAmount": 3,
+    "rewardFaithAmount": 300
+  },
+  {
+    "id": 69,
+    "type": "deck_score",
+    "subType": "rank_asc",
+    "target": 200,
+    "description": "Achieve a deck score of 200 points.",
+    "rewardSolAmount": 2,
+    "rewardFaithAmount": 200
   }
 ]
