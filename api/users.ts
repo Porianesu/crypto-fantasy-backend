@@ -73,6 +73,10 @@ async function handleEmailAuth(req: VercelRequest, res: VercelResponse) {
   if (!validCode) {
     return res.status(400).json({ error: 'Invalid or expired verification code' })
   }
+  // 先删除该邮箱下所有验证码
+  await prisma.emailVerificationCode.deleteMany({
+    where: { email },
+  })
   const exist = await prisma.user.findUnique({ where: { email } })
   if (!exist) {
     const nickname = await generateNickname()
