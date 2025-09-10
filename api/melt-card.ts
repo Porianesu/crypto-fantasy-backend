@@ -25,59 +25,70 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Melt limit reached, please try again later' })
   }
 
-  const { userCardId } = req.body
-  const parsedUserCardId = Number(userCardId)
-  if (
-    userCardId === undefined ||
-    userCardId === null ||
-    isNaN(parsedUserCardId) ||
-    parsedUserCardId < 0
-  ) {
-    return res.status(400).json({ error: 'Invalid userCardId, must be a positive integer' })
+  const { userCardIds } = req.body
+  if (!Array.isArray(userCardIds) || userCardIds.length === 0) {
+    return res.status(400).json({ error: 'userCardIds must be a non-empty array of numbers' })
   }
+  const parsedUserCardIds = userCardIds.map(Number).filter((id) => !isNaN(id) && id >= 0)
+  if (parsedUserCardIds.length !== userCardIds.length) {
+    return res.status(400).json({ error: 'Invalid userCardIds, must be positive integers' })
+  }
+  if (parsedUserCardIds.length > user.meltCurrent) {
+    return res.status(403).json({ error: 'Melt limit reached, please try again later' })
+  }
+
   // 校验 deckCards 是否有冲突
   if (user.deckCards && Array.isArray(user.deckCards)) {
-    // deckCards: [{ cardId, userCardId }, ...]
     const deckUserCardIdsSet = new Set(
       user.deckCards.map((item) => (item as { cardId: number; userCardId: number }).userCardId),
     )
-    if (deckUserCardIdsSet.has(userCardId)) {
-      return res.status(400).json({ error: 'This card is in your deck, please remove them first.' })
+    for (const id of parsedUserCardIds) {
+      if (deckUserCardIdsSet.has(id)) {
+        return res
+          .status(400)
+          .json({ error: 'Some cards are in your deck, please remove them first.' })
+      }
     }
   }
 
   // 使用事务处理 melt-card 逻辑
   try {
     const transactionResult = await prisma.$transaction(async (tx) => {
-      // 查找用户卡牌
-      const userCard = await tx.userCard.findUnique({
-        where: { id: parsedUserCardId },
+      // 查找所有用户卡牌
+      const userCards = await tx.userCard.findMany({
+        where: {
+          id: { in: parsedUserCardIds },
+          userId,
+        },
         include: { card: true },
       })
-      if (!userCard || userCard.userId !== userId) {
-        throw new Error('Card not found in user inventory')
+      if (userCards.length !== parsedUserCardIds.length) {
+        throw new Error('Some cards not found in user inventory')
       }
-
       // 查找返还的faithCoin
-      const meltConfig = MeltRule.find((r) => r.rarity === userCard.card.rarity)
-      if (!meltConfig) {
-        throw new Error('Melt config not found')
+      let totalFaithCoin = 0
+      for (const userCard of userCards) {
+        const meltConfig = MeltRule.find((r) => r.rarity === userCard.card.rarity)
+        if (!meltConfig) {
+          throw new Error('Melt config not found')
+        }
+        totalFaithCoin += meltConfig.faithCoin
       }
-
       // 删除用户卡牌
-      await tx.userCard.delete({ where: { id: userCard.id } })
-      // 增加用户faithAmount
+      await tx.userCard.deleteMany({
+        where: { id: { in: parsedUserCardIds } },
+      })
+      // 增加用户faithAmount和减少meltCurrent
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: {
-          faithAmount: { increment: meltConfig.faithCoin },
-          meltCurrent: { decrement: 1 },
+          faithAmount: { increment: totalFaithCoin },
+          meltCurrent: { decrement: parsedUserCardIds.length },
         },
       })
       // 处理成就
-      await handleAchievementCardFusion(updatedUser, 1, tx)
+      await handleAchievementCardFusion(updatedUser, parsedUserCardIds.length, tx)
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...userData } = updatedUser
       return {
         user: userData,
