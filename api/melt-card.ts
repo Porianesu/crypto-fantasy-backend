@@ -24,7 +24,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (user.meltCurrent <= 0) {
     return res.status(403).json({ error: 'Melt limit reached, please try again later' })
   }
-
   const { userCardIds } = req.body
   if (!Array.isArray(userCardIds) || userCardIds.length === 0) {
     return res.status(400).json({ error: 'userCardIds must be a non-empty array of numbers' })
