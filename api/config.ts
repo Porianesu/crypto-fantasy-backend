@@ -1,5 +1,12 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { CraftRule, DefaultAvatars, MeltRule, NewbieReward, ReferralReward } from '../utils/config'
+import {
+  CraftRule,
+  DefaultAvatars,
+  LegendaryDrawCardGuarantee,
+  MeltRule,
+  NewbieReward,
+  ReferralReward,
+} from '../utils/config'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -17,6 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       MeltRule,
       NewbieReward,
       ReferralReward,
+      LegendaryDrawCardGuarantee,
     })
   }
 
