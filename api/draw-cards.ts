@@ -4,6 +4,7 @@ import { verifyToken } from '../utils/jwt'
 import prisma from '../prisma'
 import { handleAchievementCardsCollect } from '../utils/achievement/card-collect'
 import { handleAchievementSolConsume } from '../utils/achievement/unique'
+import { LegendaryDrawCardGuarantee } from '../utils/config'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -38,6 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (solAmountBN.isLessThan(costBN)) {
     return res.status(400).json({ error: 'Insufficient Balance!' })
   }
+
   // 分组，每4张为一个类型
   const cardTypeCount = Math.floor(cardsData.length / 4)
   const availableIndexes = Array.from({ length: cardTypeCount }, (_, i) => i)
@@ -49,31 +51,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // 抽5张卡
   const drawCardsCount = 5
   const selectedIndexes = availableIndexes.slice(0, drawCardsCount)
-  const resultCards = selectedIndexes.map((cardTypeIndex) => {
-    const baseIndex = cardTypeIndex * 4
-    const cardRaritySeed = Math.random()
-    if (cardRaritySeed >= 0.995) {
-      return cardsData[baseIndex + 3] // SSR
-    } else if (cardRaritySeed >= 0.95) {
-      return cardsData[baseIndex + 2] // SR
-    } else if (cardRaritySeed >= 0.75) {
-      return cardsData[baseIndex + 1] // R
-    } else {
-      return cardsData[baseIndex] // N
-    }
-  })
 
+  // 事务实现保底逻辑
   const now = new Date()
   const userId = user.id
-  // 使用事务保证原子性
   const result = await prisma.$transaction(async (tx) => {
-    // 扣减余额
+    // 查询最新用户，获取保底计数
+    const freshUser = await tx.user.findUnique({ where: { id: userId } })
+    const drawCount = freshUser?.drawCountSinceLastLegendary ?? 0
+    let legendaryDrawn = false
+    const resultCards = selectedIndexes.map((cardTypeIndex) => {
+      const baseIndex = cardTypeIndex * 4
+      const cardRaritySeed = Math.random()
+      if (cardRaritySeed >= 0.995) {
+        legendaryDrawn = true
+        return cardsData[baseIndex + 3] // SSR
+      } else if (cardRaritySeed >= 0.95) {
+        return cardsData[baseIndex + 2] // SR
+      } else if (cardRaritySeed >= 0.75) {
+        return cardsData[baseIndex + 1] // R
+      } else {
+        return cardsData[baseIndex] // N
+      }
+    })
+    // 保底逻辑：如果未抽到橙卡且计数达到60，则强制将最后一张卡设为橙卡
+    if (!legendaryDrawn && drawCount + 1 >= LegendaryDrawCardGuarantee) {
+      // 随机选一组，强制橙卡
+      const lastIndex = selectedIndexes[selectedIndexes.length - 1]
+      resultCards[resultCards.length - 1] = cardsData[lastIndex * 4 + 3]
+      legendaryDrawn = true
+    }
+    // 更新保底计数
+    const newDrawCount = legendaryDrawn ? 0 : drawCount + 1
+    // 扣减余额和更新保底计数
     const updatedUser = await tx.user.update({
       where: { id: userId },
       data: {
         solAmount: {
           decrement: costBN.toNumber(),
         },
+        drawCountSinceLastLegendary: newDrawCount,
       },
     })
     // 批量插入UserCard
@@ -108,7 +125,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }))
 
   // 不返回密码
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...userData } = result.updatedUser
   res.status(200).json({ cards: cardsWithUserCardId, user: userData })
 }

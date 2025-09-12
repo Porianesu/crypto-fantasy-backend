@@ -121,3 +121,5 @@ export const SignInReward = [
     faithAmount: 2800,
   },
 ]
+
+export const LegendaryDrawCardGuarantee = 60 // 保底抽卡次数
