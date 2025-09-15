@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { Card } from '@prisma/client'
+import { Card, User } from '@prisma/client'
 import { verifyToken } from '../utils/jwt'
-import { CraftRule, ICraftRule } from '../utils/config'
+import { CARD_RARITY, CraftRule, ICraftRule, MeltCardGuarantee } from '../utils/config'
 import { successRateCalculate } from '../utils/common'
 import { BigNumber } from 'bignumber.js'
 import prisma from '../prisma'
@@ -112,6 +112,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: "Additive cards doesn't match" })
   }
 
+  // 查询用户当前 craftCountSinceLastXxx
+  let failCountField: string
+  switch (craftCard.rarity) {
+    case CARD_RARITY.RARE:
+      failCountField = 'craftCountSinceLastRare'
+      break
+    case CARD_RARITY.EPIC:
+      failCountField = 'craftCountSinceLastEpic'
+      break
+    case CARD_RARITY.LEGENDARY:
+      failCountField = 'craftCountSinceLastLegendary'
+      break
+    default:
+      failCountField = ''
+  }
+  if (!failCountField) {
+    return res.status(400).json({ error: 'Card rarity not support craft' })
+  }
+
   try {
     const transactionResult = await prisma.$transaction(async (tx) => {
       // faithAmount 扣款
@@ -119,9 +138,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         where: { id: user.id },
         data: { faithAmount: { decrement: craftConfig.requiredFaithCoin } },
       })
-      //更新成就
+      const userFailCount = updatedUser[failCountField as 'craftCountSinceLastRare'] || 0
+      const guaranteeCount = MeltCardGuarantee[craftCard.rarity as CARD_RARITY]
       await handleAchievementCardsFaithConsume(updatedUser, craftConfig.requiredFaithCoin, tx)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...userData } = updatedUser
 
       const successRate = successRateCalculate(
@@ -130,6 +149,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         additiveCards.map((card) => card.card),
       )
       const randomNumber = new BigNumber(Math.random())
+      let shouldSuccess = false
+      let newFailCount = userFailCount
+      // 保底判定
+      if (userFailCount + 1 > guaranteeCount) {
+        shouldSuccess = true
+        newFailCount = 0
+      } else {
+        shouldSuccess = randomNumber.isLessThanOrEqualTo(successRate)
+        newFailCount = shouldSuccess ? 0 : userFailCount + 1
+      }
       // 删除所有消耗的卡牌
       await tx.userCard.deleteMany({
         where: {
@@ -141,7 +170,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
         },
       })
-      if (randomNumber.isLessThanOrEqualTo(successRate)) {
+      // 更新用户保底计数
+      if (failCountField) {
+        await tx.user.update({
+          where: { id: user.id },
+          data: { [failCountField]: newFailCount },
+        })
+      }
+      if (shouldSuccess) {
         // 合成成功
         const userCardCreateResult = await tx.userCard.create({
           data: {
@@ -150,7 +186,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
           include: { card: true },
         })
-        // 更新成就
         await Promise.all([
           handleAchievementCardCraft(updatedUser, 1, tx),
           handleAchievementCardsCollect(updatedUser, [craftCard], tx),

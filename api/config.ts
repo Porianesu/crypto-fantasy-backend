@@ -3,6 +3,7 @@ import {
   CraftRule,
   DefaultAvatars,
   LegendaryDrawCardGuarantee,
+  MeltCardGuarantee,
   MeltRule,
   NewbieReward,
   ReferralReward,
@@ -25,6 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       NewbieReward,
       ReferralReward,
       LegendaryDrawCardGuarantee,
+      MeltCardGuarantee,
     })
   }
 
