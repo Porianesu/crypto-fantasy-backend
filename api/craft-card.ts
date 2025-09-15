@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { Card, User } from '@prisma/client'
 import { verifyToken } from '../utils/jwt'
-import { CARD_RARITY, CraftRule, ICraftRule, MeltCardGuarantee } from '../utils/config'
+import { CARD_RARITY, CraftRule, ICraftRule, CraftCardGuarantee } from '../utils/config'
 import { successRateCalculate } from '../utils/common'
 import { BigNumber } from 'bignumber.js'
 import prisma from '../prisma'
@@ -139,7 +139,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         data: { faithAmount: { decrement: craftConfig.requiredFaithCoin } },
       })
       const userFailCount = updatedUser[failCountField as 'craftCountSinceLastRare'] || 0
-      const guaranteeCount = MeltCardGuarantee[craftCard.rarity as CARD_RARITY]
+      const guaranteeCount = CraftCardGuarantee[craftCard.rarity as CARD_RARITY]
       await handleAchievementCardsFaithConsume(updatedUser, craftConfig.requiredFaithCoin, tx)
       const { password, ...userData } = updatedUser
 

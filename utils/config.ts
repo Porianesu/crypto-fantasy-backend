@@ -124,7 +124,7 @@ export const SignInReward = [
 
 export const LegendaryDrawCardGuarantee = 60 // 保底抽卡次数
 
-export const MeltCardGuarantee: Record<CARD_RARITY, number> = {
+export const CraftCardGuarantee: Record<CARD_RARITY, number> = {
   [CARD_RARITY.NORMAL]: 1,
   [CARD_RARITY.RARE]: 4,
   [CARD_RARITY.EPIC]: 10,
