@@ -150,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       let shouldSuccess = false
       let newFailCount = userFailCount
       // 保底判定
-      if (userFailCount + 1 > guaranteeCount) {
+      if (userFailCount + 1 >= guaranteeCount) {
         shouldSuccess = true
         newFailCount = 0
       } else {
