@@ -76,7 +76,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
     // 保底逻辑：如果未抽到橙卡且计数达到60，则强制将最后一张卡设为橙卡
     if (!legendaryDrawn && drawCount + 1 >= LegendaryDrawCardGuarantee) {
-      // 随机选一组，强制橙卡
       const lastIndex = selectedIndexes[selectedIndexes.length - 1]
       resultCards[resultCards.length - 1] = cardsData[lastIndex * 4 + 3]
       legendaryDrawn = true
