@@ -141,8 +141,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const userFailCount = updatedUser[failCountField as 'craftCountSinceLastRare'] || 0
       const guaranteeCount = CraftCardGuarantee[craftCard.rarity as CARD_RARITY]
       await handleAchievementCardsFaithConsume(updatedUser, craftConfig.requiredFaithCoin, tx)
-      const { password, ...userData } = updatedUser
-
       const successRate = successRateCalculate(
         craftConfig,
         craftCard,
@@ -171,12 +169,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       })
       // 更新用户保底计数
-      if (failCountField) {
-        await tx.user.update({
-          where: { id: user.id },
-          data: { [failCountField]: newFailCount },
-        })
-      }
+      const freshUser = await tx.user.update({
+        where: { id: user.id },
+        data: { [failCountField]: newFailCount },
+      })
+      const { password, ...userData } = freshUser
       if (shouldSuccess) {
         // 合成成功
         const userCardCreateResult = await tx.userCard.create({
