@@ -122,7 +122,7 @@ export const SignInReward = [
   },
 ]
 
-export const LegendaryDrawCardGuarantee = 10 // 保底抽卡次数
+export const LegendaryDrawCardGuarantee = 60 // 保底抽卡次数
 
 export const CraftCardGuarantee: Record<CARD_RARITY, number> = {
   [CARD_RARITY.NORMAL]: 1,
