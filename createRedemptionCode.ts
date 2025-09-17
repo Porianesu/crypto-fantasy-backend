@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client'
 import { generateRandomString } from './utils/common'
-
-const prisma = new PrismaClient()
+import prisma from './prisma'
 
 async function main() {
   // 手动配置兑换码参数

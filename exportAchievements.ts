@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import fs from 'fs'
 import path from 'path'
-
-const prisma = new PrismaClient()
+import prisma from './prisma'
 
 async function exportAchievementsToJson(type?: string, subType?: string) {
   // 构建 where 条件
