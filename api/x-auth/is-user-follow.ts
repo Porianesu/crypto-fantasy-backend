@@ -29,7 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const oauth = getOAuth()
-    const url = `https://api.twitter.com/2/users/${twitterAccount.twitterUserId}/following`
+    // 查询当前绑定用户自己的信息
+    const url = `https://api.twitter.com/2/users/me`
     const request_data = {
       url,
       method: 'GET',
@@ -39,23 +40,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         key: twitterAccount.oauthToken,
         secret: twitterAccount.oauthTokenSecret,
       }),
-    ) as unknown as Record<string, string>
-    headers['Content-Type'] = 'application/json'
+    ) as Record<string, string>
 
-    // 支持分页参数
-    const { pagination_token, max_results } = req.query
-    const params: any = {}
-    if (pagination_token) params.pagination_token = pagination_token
-    if (max_results) params.max_results = max_results
-
-    const response = await axios.get(url, { headers, params })
-    // 返回完整的 following 列表（部分字段）
+    const response = await axios.get(url, { headers })
     return res.status(200).json(response.data)
   } catch (err: any) {
     return res.status(500).json({
-      error: 'Failed to fetch following list',
+      error: 'Failed to fetch user info',
       detail: err.message,
-      twitterError: err,
+      twitterError: err.response?.data,
     })
   }
 }
