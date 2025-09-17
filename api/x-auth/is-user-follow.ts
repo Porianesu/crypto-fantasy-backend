@@ -52,6 +52,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 返回完整的 following 列表（部分字段）
     return res.status(200).json(response.data)
   } catch (err: any) {
-    return res.status(500).json({ error: 'Failed to fetch following list', detail: err.message })
+    return res.status(500).json({
+      error: 'Failed to fetch following list',
+      detail: err.message,
+      twitterError: err,
+    })
   }
 }
