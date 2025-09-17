@@ -1,0 +1,31 @@
+import { VercelRequest, VercelResponse } from '@vercel/node'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // 只允许 POST 请求
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' })
+  }
+
+  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).end('Unauthorized')
+  }
+
+  // 测试用：每10分钟清理一次（10分钟）
+  const TEN_MINUTES = 10 * 60 * 1000
+  const now = new Date()
+  const expiredAt = new Date(now.getTime() - TEN_MINUTES)
+
+  try {
+    const deleted = await prisma.twitterOauthToken.deleteMany({
+      where: {
+        createdAt: { lt: expiredAt },
+      },
+    })
+    return res.status(200).json({ success: true, deletedCount: deleted.count })
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to cleanup', detail: String(err) })
+  }
+}
