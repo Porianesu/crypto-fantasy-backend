@@ -2,11 +2,6 @@ import { VercelRequest, VercelResponse } from '@vercel/node'
 import prisma from '../../prisma'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // 只允许 POST 请求
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' })
-  }
-
   if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).end('Unauthorized')
   }
