@@ -3,6 +3,7 @@ import { getOAuth } from '../../utils/x-oauth'
 import axios from 'axios'
 import { setCorsHeaders } from '../../utils/common'
 import prisma from '../../prisma'
+import { verifyToken } from '../../utils/jwt'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res)
@@ -18,6 +19,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { oauth_token, oauth_verifier } = req.query
   if (!oauth_token || !oauth_verifier) {
     return res.status(400).json({ error: 'Missing oauth_token or oauth_verifier' })
+  }
+
+  const user = await verifyToken(req)
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized' })
   }
 
   // 查询数据库获取 oauth_token_secret
@@ -60,12 +66,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     // 删除已用的token
     await prisma.twitterOauthToken.delete({ where: { oauthToken: String(oauth_token) } })
-    // 返回数据
+
+    // 绑定或更新 TwitterAccount
+    const twitterAccount = await prisma.twitterAccount.upsert({
+      where: { userId: user.id },
+      update: {
+        twitterUserId: user_id,
+        screenName: screen_name ?? '',
+        oauthToken: oauth_token_res,
+        oauthTokenSecret: oauth_token_secret_res ?? '',
+      },
+      create: {
+        userId: user.id,
+        twitterUserId: user_id,
+        screenName: screen_name ?? '',
+        oauthToken: oauth_token_res,
+        oauthTokenSecret: oauth_token_secret_res ?? '',
+      },
+    })
+
     return res.status(200).json({
-      oauth_token: oauth_token_res,
-      oauth_token_secret: oauth_token_secret_res,
-      user_id,
-      screen_name,
+      success: true,
+      twitterAccount: {
+        twitterUserId: twitterAccount.twitterUserId,
+        screenName: twitterAccount.screenName,
+      },
     })
   } catch (err) {
     return res.status(500).json({ error: 'Failed to get access token', detail: String(err) })

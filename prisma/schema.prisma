@@ -41,6 +41,7 @@ model User {
   craftCountSinceLastLegendary Int                @default(0) // 橙卡保底计数
   craftCountSinceLastEpic      Int                @default(0) // 紫卡保底计数
   craftCountSinceLastRare      Int                @default(0) // 蓝卡保底计数
+  twitterAccount               TwitterAccount?
 }
 
 model Card {
@@ -179,4 +180,16 @@ model TwitterOauthToken {
   oauthToken       String   @unique
   oauthTokenSecret String
   createdAt        DateTime @default(now())
+}
+
+model TwitterAccount {
+  id               Int      @id @default(autoincrement())
+  userId           Int      @unique // 每个用户只能绑定一个 Twitter 账号
+  twitterUserId    String // Twitter 的 user_id
+  screenName       String
+  oauthToken       String
+  oauthTokenSecret String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id])
 }
