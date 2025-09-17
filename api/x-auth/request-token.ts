@@ -2,6 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node'
 import { getOAuth } from '../../utils/x-oauth'
 import axios from 'axios'
 import { setCorsHeaders } from '../../utils/common'
+import prisma from '../../prisma'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res)
@@ -30,9 +31,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const params = new URLSearchParams(response.data)
     const oauth_token = params.get('oauth_token')
     const oauth_token_secret = params.get('oauth_token_secret')
-    if (!oauth_token) {
+    if (!oauth_token || !oauth_token_secret) {
       return res.status(500).json({ error: 'Failed to get oauth_token' })
     }
+    // 存储到数据库
+    await prisma.twitterOauthToken.create({
+      data: {
+        oauthToken: oauth_token,
+        oauthTokenSecret: oauth_token_secret,
+      },
+    })
     // 返回 oauth_token 给前端
     return res.status(200).json({ oauth_token })
   } catch (err) {
