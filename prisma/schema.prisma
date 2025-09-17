@@ -173,3 +173,10 @@ model EmailVerificationCode {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+model TwitterOauthToken {
+  id               Int      @id @default(autoincrement())
+  oauthToken       String   @unique
+  oauthTokenSecret String
+  createdAt        DateTime @default(now())
+}

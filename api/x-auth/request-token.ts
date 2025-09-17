@@ -1,11 +1,10 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import { getOAuth } from '../../utils/x-oauth'
 import axios from 'axios'
+import { setCorsHeaders } from '../../utils/common'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  setCorsHeaders(res)
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end()
@@ -35,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Failed to get oauth_token' })
     }
     // 返回 oauth_token 给前端
-    return res.status(200).json({ oauth_token, oauth_token_secret })
+    return res.status(200).json({ oauth_token })
   } catch (err) {
     return res.status(500).json({ error: 'Failed to get request token', detail: String(err) })
   }
