@@ -87,10 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       success: true,
-      twitterAccount: {
-        twitterUserId: twitterAccount.twitterUserId,
-        screenName: twitterAccount.screenName,
-      },
+      twitterAccount,
     })
   } catch (err) {
     return res.status(500).json({ error: 'Failed to get access token', detail: String(err) })

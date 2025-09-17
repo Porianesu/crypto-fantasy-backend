@@ -1,10 +1,10 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import { verifyToken } from '../utils/jwt'
+import { verifyToken } from '../../utils/jwt'
+import prisma from '../../prisma'
+import { setCorsHeaders } from '../../utils/common'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  setCorsHeaders(res, 'GET, OPTIONS')
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end()
@@ -19,6 +19,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  const { password, ...userData } = user
-  res.status(200).json({ user: userData })
+  const twitterAccount = await prisma.twitterAccount.findUnique({
+    where: { userId: user.id },
+  })
+
+  res.status(200).json({ twitterAccount })
 }
