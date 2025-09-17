@@ -40,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         key: twitterAccount.oauthToken,
         secret: twitterAccount.oauthTokenSecret,
       }),
-    ) as Record<string, string>
+    ) as unknown as Record<string, string>
 
     const response = await axios.get(url, { headers })
     return res.status(200).json(response.data)
