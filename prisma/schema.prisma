@@ -200,7 +200,7 @@ model Task {
   type              String // 任务类型，如 twitter, invite, etc.
   subType           String? // 子类型，如 follow, like, retweet, etc.
   description       String
-  target            String // 任务目标，可以是twitter 推文id等
+  target            String? // 任务目标，可以是twitter 推文id等
   rewardSolAmount   Int // S代币奖励
   rewardFaithAmount Int // F代币奖励
   createdAt         DateTime   @default(now())
