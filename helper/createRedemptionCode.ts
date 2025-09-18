@@ -1,5 +1,5 @@
-import { generateRandomString } from './utils/common'
-import prisma from './prisma'
+import { generateRandomString } from '../utils/common'
+import prisma from '../prisma'
 
 async function main() {
   // 手动配置兑换码参数

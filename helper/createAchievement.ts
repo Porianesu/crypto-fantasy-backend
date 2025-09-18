@@ -1,5 +1,5 @@
 import achievements from './achievements.json'
-import prisma from './prisma'
+import prisma from '../prisma'
 
 async function main() {
   // 遍历 achievements.json，存在id则更新，否则创建

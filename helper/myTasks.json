@@ -1,0 +1,10 @@
+[
+  {
+    "type": "twitter",
+    "subType": "bind",
+    "target": null,
+    "description": "Bind your X account to receive rewards.",
+    "rewardSolAmount": 10,
+    "rewardFaithAmount": 1000
+  }
+]

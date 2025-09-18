@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import prisma from './prisma'
+import prisma from '../prisma'
 
 async function exportAchievementsToJson(type?: string, subType?: string) {
   // 构建 where 条件
