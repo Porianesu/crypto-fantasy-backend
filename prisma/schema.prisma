@@ -42,6 +42,7 @@ model User {
   craftCountSinceLastEpic      Int                @default(0) // 紫卡保底计数
   craftCountSinceLastRare      Int                @default(0) // 蓝卡保底计数
   twitterAccount               TwitterAccount?
+  userTasks                    UserTask[]
 }
 
 model Card {
@@ -192,4 +193,28 @@ model TwitterAccount {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   user             User     @relation(fields: [userId], references: [id])
+}
+
+model Task {
+  id                Int        @id @default(autoincrement())
+  type              String // 任务类型，如 twitter, invite, etc.
+  subType           String? // 子类型，如 follow, like, retweet, etc.
+  description       String
+  target            String // 任务目标，可以是twitter 推文id等
+  rewardSolAmount   Int // S代币奖励
+  rewardFaithAmount Int // F代币奖励
+  createdAt         DateTime   @default(now())
+  userTasks         UserTask[]
+}
+
+model UserTask {
+  id          Int       @id @default(autoincrement())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  task        Task      @relation(fields: [taskId], references: [id])
+  taskId      Int
+  status      Int // 0:未完成 1:已完成未领取 2:已领取
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+  claimedAt   DateTime?
 }
