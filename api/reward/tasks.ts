@@ -81,21 +81,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
         const now = new Date()
         // 更新任务状态为已完成
-        await tx.userTask.upsert({
-          where: { id: userTask?.id },
-          update: {
-            status: 2,
-            completedAt: now,
-            claimedAt: now,
-          },
-          create: {
-            userId: user.id,
-            taskId: task.id,
-            status: 2,
-            completedAt: now,
-            claimedAt: now,
-          },
-        })
+        if (userTask) {
+          await tx.userTask.update({
+            where: { id: userTask.id },
+            data: {
+              status: 2,
+              completedAt: now,
+              claimedAt: now,
+            },
+          })
+        } else {
+          await tx.userTask.create({
+            data: {
+              userId: user.id,
+              taskId: task.id,
+              status: 2,
+              completedAt: now,
+              claimedAt: now,
+            },
+          })
+        }
         return {
           success: true,
           solAmount: updatedUser.solAmount,
