@@ -54,12 +54,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           where: { userId: user.id, achievementId },
         })
         if (!userAchievement || userAchievement.status !== 1) {
-          return res.status(400).json({ error: 'Achievement not completed or already claimed' })
+          throw new Error('Achievement not completed or already claimed')
         }
         // 查询成就奖励
         const achievement = await tx.achievement.findUnique({ where: { id: achievementId } })
         if (!achievement) {
-          return res.status(404).json({ error: 'Achievement not found' })
+          throw new Error('Achievement not found')
         }
         // 发放奖励（这里只做简单的资源奖励，按实际业务调整）
         const updatedUser = await tx.user.update({
