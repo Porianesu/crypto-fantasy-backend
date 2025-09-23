@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { Prisma, Task, User } from '@prisma/client'
 import { getOAuth } from '../x-oauth'
 
@@ -43,7 +43,24 @@ const handleTwitterRetweetTask = async (
       return false
     }
   } catch (e) {
-    console.log(`查询${url},报错:`, e)
+    if (axios.isAxiosError(e) && e.response) {
+      const status = e.response.status
+      if (status === 429) {
+        const resetTimeStamp = e.response.headers['x-rate-limit-reset']
+        if (resetTimeStamp) {
+          const resetMs = Number(resetTimeStamp) * 1000
+          const now = Date.now()
+          const waitSec = Math.max(0, Math.floor((resetMs - now) / 1000))
+          console.warn(
+            `Rate limit exceeded for ${url}. Retry after ${waitSec}s at ${new Date(resetMs).toLocaleString()}`,
+          )
+        } else {
+          console.warn(`Rate limit exceeded for ${url}, but no reset time found.`)
+        }
+      }
+    } else {
+      console.log(`查询${url},报错:`, e)
+    }
     return false
   }
 }
