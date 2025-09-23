@@ -35,8 +35,8 @@ const handleTwitterRetweetTask = async (
         username: string
       }>
     }>(url, { headers })
+    console.log(`查询${url},得到retweeted_by列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
-      console.log(`查询${url},得到retweeted_by列表:`, response.data.data)
       // 判断当前用户是否在 retweeted_by 列表中
       return response.data.data.some((u) => u.id === userTwitterAccount.twitterUserId)
     } else {
