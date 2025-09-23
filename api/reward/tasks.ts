@@ -69,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             break
         }
         if (!taskResult) {
-          throw new Error("You didn't complete this task yet!")
+          throw new Error("You didn't complete this task yet, please try again later")
         }
         // 发放奖励（这里只做简单的资源奖励，按实际业务调整）
         const updatedUser = await tx.user.update({
