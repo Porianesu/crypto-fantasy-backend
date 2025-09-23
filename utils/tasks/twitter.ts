@@ -43,6 +43,7 @@ const handleTwitterRetweetTask = async (
       return false
     }
   } catch (e) {
+    console.log(`查询${url},报错:`, e)
     return false
   }
 }
