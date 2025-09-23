@@ -1,10 +1,38 @@
 [
   {
+    "id": 1,
     "type": "twitter",
     "subType": "bind",
     "target": null,
     "description": "Bind your X account to receive rewards.",
     "rewardSolAmount": 10,
     "rewardFaithAmount": 1000
+  },
+  {
+    "id": 2,
+    "type": "twitter",
+    "subType": "retweet",
+    "target": "https://x.com/FantasyCrypto7/status/1968949513650909358",
+    "description": "Retweet the pinned tweet.",
+    "rewardSolAmount": 5,
+    "rewardFaithAmount": 500
+  },
+  {
+    "id": 3,
+    "type": "twitter",
+    "subType": "like",
+    "target": "https://x.com/FantasyCrypto7/status/1968949513650909358",
+    "description": "Like the pinned tweet.",
+    "rewardSolAmount": 5,
+    "rewardFaithAmount": 500
+  },
+  {
+    "id": 4,
+    "type": "twitter",
+    "subType": "follow",
+    "target": "https://x.com/FantasyCrypto7",
+    "description": "Follow official account on X.",
+    "rewardSolAmount": 5,
+    "rewardFaithAmount": 500
   }
 ]
