@@ -72,6 +72,7 @@ const handleTwitterReplyTask = async (
     const response = await axios.get<ITwitterCommonResponse<Array<ITwitterTweetResponse>>>(url, {
       headers,
     })
+    console.log(`查询${url},得到tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
       return response.data.data.some((tweet) =>
         tweet.referenced_tweets?.some(
