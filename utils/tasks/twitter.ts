@@ -66,8 +66,9 @@ const handleTwitterReplyTask = async (
   const tweetId = match[1]
   const oauth = getOAuth()
   const url = `https://api.x.com/2/users/${userTwitterAccount.twitterUserId}/tweets`
+  const params = { 'tweet.fields': 'referenced_tweets' }
   try {
-    const request_data = { url, method: 'GET' }
+    const request_data = { url, method: 'GET', data: params }
     const headers = oauth.toHeader(
       oauth.authorize(request_data, {
         key: userTwitterAccount.oauthToken,
@@ -76,9 +77,7 @@ const handleTwitterReplyTask = async (
     ) as unknown as Record<string, string>
     const response = await axios.get<ITwitterCommonResponse<Array<ITwitterTweetResponse>>>(url, {
       headers,
-      params: {
-        'tweet.fields': 'referenced_tweets',
-      },
+      params,
     })
     console.log(`查询${url},得到tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
@@ -109,10 +108,12 @@ const handleTwitterRetweetTask = async (
   // 2. 查询用户的 tweets
   const oauth = getOAuth()
   const url = `https://api.x.com/2/users/${userTwitterAccount.twitterUserId}/tweets`
+  const params = { 'tweet.fields': 'referenced_tweets' }
   try {
     const request_data = {
       url,
       method: 'GET',
+      data: params,
     }
     const headers = oauth.toHeader(
       oauth.authorize(request_data, {
@@ -122,9 +123,7 @@ const handleTwitterRetweetTask = async (
     ) as unknown as Record<string, string>
     const response = await axios.get<ITwitterCommonResponse<Array<ITwitterTweetResponse>>>(url, {
       headers,
-      params: {
-        'tweet.fields': 'referenced_tweets',
-      },
+      params,
     })
     console.log(`查询${url},得到tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
