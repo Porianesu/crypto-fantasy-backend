@@ -83,7 +83,7 @@ const handleTwitterReplyTask = async (
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
       return {
         result: response.data.data.some((tweet) =>
-          tweet.referenced_tweets?.some(
+          tweet?.referenced_tweets?.some(
             (ref: any) => ref.type === 'replied_to' && ref.id === tweetId,
           ),
         ),
@@ -129,7 +129,7 @@ const handleTwitterRetweetTask = async (
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
       return {
         result: response.data.data.some((tweet) =>
-          tweet.referenced_tweets?.some(
+          tweet?.referenced_tweets?.some(
             (ref: any) => ref.type === 'retweeted' && ref.id === tweetId,
           ),
         ),
