@@ -5,6 +5,11 @@ import { getOAuth } from '../x-oauth'
 // 修正正则
 const TWEET_URL_REGEX = /https:\/\/x\.com\/[A-Za-z0-9_]+\/status\/(\d+)/
 
+export interface IHandleTwitterTaskResult {
+  result: boolean
+  error?: unknown
+}
+
 interface ITwitterTweetResponse {
   id: string
   text: string
@@ -54,10 +59,10 @@ const commonTwitterApiResponseErrorHandler = (e: unknown, url: string) => {
 const handleTwitterReplyTask = async (
   userTwitterAccount: { twitterUserId: string; oauthToken: string; oauthTokenSecret: string },
   task: Task,
-) => {
-  if (!userTwitterAccount?.twitterUserId || !task.target) return false
+): Promise<IHandleTwitterTaskResult> => {
+  if (!userTwitterAccount?.twitterUserId || !task.target) return { result: false }
   const match = task.target.match(TWEET_URL_REGEX)
-  if (!match) return false
+  if (!match) return { result: false }
   const tweetId = match[1]
   const oauth = getOAuth()
   const url = `https://api.x.com/2/users/${userTwitterAccount.twitterUserId}/tweets`
@@ -74,27 +79,29 @@ const handleTwitterReplyTask = async (
     })
     console.log(`查询${url},得到tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
-      return response.data.data.some((tweet) =>
-        tweet.referenced_tweets?.some(
-          (ref: any) => ref.type === 'replied_to' && ref.id === tweetId,
+      return {
+        result: response.data.data.some((tweet) =>
+          tweet.referenced_tweets?.some(
+            (ref: any) => ref.type === 'replied_to' && ref.id === tweetId,
+          ),
         ),
-      )
+      }
     }
-    return false
+    return { result: false }
   } catch (e) {
     commonTwitterApiResponseErrorHandler(e, url)
-    return false
+    return { result: false, error: e }
   }
 }
 
 const handleTwitterRetweetTask = async (
   userTwitterAccount: { twitterUserId: string; oauthToken: string; oauthTokenSecret: string },
   task: Task,
-) => {
-  if (!userTwitterAccount?.twitterUserId || !task.target) return false
+): Promise<IHandleTwitterTaskResult> => {
+  if (!userTwitterAccount?.twitterUserId || !task.target) return { result: false }
   // 1. 提取 tweetId
   const match = task.target.match(TWEET_URL_REGEX)
-  if (!match) return false
+  if (!match) return { result: false }
   const tweetId = match[1]
   // 2. 查询用户的 tweets
   const oauth = getOAuth()
@@ -115,27 +122,30 @@ const handleTwitterRetweetTask = async (
     })
     console.log(`查询${url},得到tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
-      // 只判断转发类型的推文
-      return response.data.data.some((tweet) =>
-        tweet.referenced_tweets?.some((ref: any) => ref.type === 'retweeted' && ref.id === tweetId),
-      )
+      return {
+        result: response.data.data.some((tweet) =>
+          tweet.referenced_tweets?.some(
+            (ref: any) => ref.type === 'retweeted' && ref.id === tweetId,
+          ),
+        ),
+      }
     } else {
-      return false
+      return { result: false }
     }
   } catch (e) {
     commonTwitterApiResponseErrorHandler(e, url)
-    return false
+    return { result: false, error: e }
   }
 }
 
 const handleTwitterLikeTask = async (
   userTwitterAccount: { twitterUserId: string; oauthToken: string; oauthTokenSecret: string },
   task: Task,
-) => {
-  if (!userTwitterAccount?.twitterUserId || !task.target) return false
+): Promise<IHandleTwitterTaskResult> => {
+  if (!userTwitterAccount?.twitterUserId || !task.target) return { result: false }
   // 1. 提取 tweetId
   const match = task.target.match(TWEET_URL_REGEX)
-  if (!match) return false
+  if (!match) return { result: false }
   const tweetId = match[1]
   // 2. 查询该用户的 liked_tweets
   const oauth = getOAuth()
@@ -156,29 +166,34 @@ const handleTwitterLikeTask = async (
     })
     console.log(`查询${url},得到liked_tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
-      // 判断当前推文是否在 liked_tweets 列表中
-      return response.data.data.some((t) => t.id === tweetId)
+      return {
+        result: response.data.data.some((t) => t.id === tweetId),
+      }
     } else {
-      return false
+      return { result: false }
     }
   } catch (e) {
     commonTwitterApiResponseErrorHandler(e, url)
-    return false
+    return { result: false, error: e }
   }
 }
 
-export const handleTwitterTask = async (tx: Prisma.TransactionClient, user: User, task: Task) => {
+export const handleTwitterTask = async (
+  tx: Prisma.TransactionClient,
+  user: User,
+  task: Task,
+): Promise<IHandleTwitterTaskResult> => {
   if (!task || task.type !== 'twitter' || !task.subType || !user || !tx) {
-    return false
+    return { result: false }
   }
   const userTwitterAccount = await tx.twitterAccount.findUnique({ where: { userId: user.id } })
   if (task.subType === 'bind') {
-    return !!userTwitterAccount?.twitterUserId
+    return { result: !!userTwitterAccount?.twitterUserId }
   } else {
-    if (!userTwitterAccount?.twitterUserId) return false
+    if (!userTwitterAccount?.twitterUserId) return { result: false }
     switch (task.subType) {
       case 'follow':
-        return true
+        return { result: true }
       case 'retweet':
         return await handleTwitterRetweetTask(userTwitterAccount, task)
       case 'like':
@@ -186,7 +201,7 @@ export const handleTwitterTask = async (tx: Prisma.TransactionClient, user: User
       case 'reply':
         return await handleTwitterReplyTask(userTwitterAccount, task)
       default:
-        return false
+        return { result: false }
     }
   }
 }

@@ -2,7 +2,8 @@ import { VercelRequest, VercelResponse } from '@vercel/node'
 import { setCorsHeaders } from '../../utils/common'
 import { verifyToken } from '../../utils/jwt'
 import prisma from '../../prisma'
-import { handleTwitterTask } from '../../utils/tasks/twitter'
+import { handleTwitterTask, IHandleTwitterTaskResult } from '../../utils/tasks/twitter'
+import axios from 'axios'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res)
@@ -60,7 +61,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           throw new Error('Task not found')
         }
         // 判断任务是否已完成
-        let taskResult = false
+        let taskResult = {
+          result: false,
+        }
         switch (task.type) {
           case 'twitter':
             taskResult = await handleTwitterTask(tx, user, task)
@@ -68,8 +71,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           default:
             break
         }
-        if (!taskResult) {
-          throw new Error("You didn't complete this task yet, please try again later")
+        if (!taskResult?.result) {
+          let retry_after_ms = 0
+          if ((taskResult as IHandleTwitterTaskResult).error) {
+            const e = (taskResult as IHandleTwitterTaskResult).error
+            if (axios.isAxiosError(e) && e.response) {
+              if (e.response.status === 429) {
+                const resetTimeStamp = e.response.headers['x-rate-limit-reset']
+                if (resetTimeStamp) {
+                  const resetMs = Number(resetTimeStamp) * 1000
+                  const now = Date.now()
+                  retry_after_ms = Math.max(0, resetMs - now)
+                }
+              }
+            }
+          }
+          throw new Error(
+            `You didn't complete this task yet, please try ${retry_after_ms ? `after ${Math.floor(retry_after_ms / 1000)} seconds` : 'again later'}`,
+          )
         }
         // 发放奖励（这里只做简单的资源奖励，按实际业务调整）
         const updatedUser = await tx.user.update({
