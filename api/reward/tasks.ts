@@ -87,7 +87,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
           }
           throw new Error(
-            `You didn't complete this task yet, please try ${retry_after_ms ? `after ${Math.floor(retry_after_ms / 1000)} seconds` : 'again later'}`,
+            `You didn't complete this task yet, please ${retry_after_ms ? `retry after ${Math.floor(retry_after_ms / 1000)} seconds` : 'try again later'}`,
           )
         }
         // 发放奖励（这里只做简单的资源奖励，按实际业务调整）
