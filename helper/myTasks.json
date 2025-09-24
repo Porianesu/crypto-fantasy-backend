@@ -1,5 +1,14 @@
 [
   {
+    "id": 4,
+    "type": "twitter",
+    "subType": "follow",
+    "target": "https://x.com/FantasyCrypto7",
+    "description": "Follow official account on X.",
+    "rewardSolAmount": 5,
+    "rewardFaithAmount": 500
+  },
+  {
     "id": 1,
     "type": "twitter",
     "subType": "bind",
@@ -27,11 +36,11 @@
     "rewardFaithAmount": 500
   },
   {
-    "id": 4,
+    "id": 5,
     "type": "twitter",
-    "subType": "follow",
-    "target": "https://x.com/FantasyCrypto7",
-    "description": "Follow official account on X.",
+    "subType": "reply",
+    "target": "https://x.com/FantasyCrypto7/status/1968949513650909358",
+    "description": "Reply to the pinned tweet.",
     "rewardSolAmount": 5,
     "rewardFaithAmount": 500
   }
