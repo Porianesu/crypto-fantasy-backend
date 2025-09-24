@@ -139,7 +139,7 @@ const handleTwitterLikeTask = async (
   const tweetId = match[1]
   // 2. 查询该用户的 liked_tweets
   const oauth = getOAuth()
-  const url = `https://api.x.com/2/user/${userTwitterAccount.twitterUserId}/liked_tweets`
+  const url = `https://api.x.com/2/users/${userTwitterAccount.twitterUserId}/liked_tweets`
   try {
     const request_data = {
       url,
