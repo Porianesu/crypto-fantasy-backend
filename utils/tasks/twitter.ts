@@ -5,10 +5,13 @@ import { getOAuth } from '../x-oauth'
 // 修正正则
 const TWEET_URL_REGEX = /https:\/\/x\.com\/[A-Za-z0-9_]+\/status\/(\d+)/
 
-interface ITwitterUserResponse {
+interface ITwitterTweetResponse {
   id: string
-  name: string
-  username: string
+  text: string
+  referenced_tweets?: Array<{
+    id: string
+    type: 'retweeted' | 'quoted' | 'replied_to '
+  }>
 }
 
 interface ITwitterCommonResponse<T> {
@@ -48,6 +51,41 @@ const commonTwitterApiResponseErrorHandler = (e: unknown, url: string) => {
   }
 }
 
+const handleTwitterReplyTask = async (
+  userTwitterAccount: { twitterUserId: string; oauthToken: string; oauthTokenSecret: string },
+  task: Task,
+) => {
+  if (!userTwitterAccount?.twitterUserId || !task.target) return false
+  const match = task.target.match(TWEET_URL_REGEX)
+  if (!match) return false
+  const tweetId = match[1]
+  const oauth = getOAuth()
+  const url = `https://api.x.com/2/users/${userTwitterAccount.twitterUserId}/tweets`
+  try {
+    const request_data = { url, method: 'GET' }
+    const headers = oauth.toHeader(
+      oauth.authorize(request_data, {
+        key: userTwitterAccount.oauthToken,
+        secret: userTwitterAccount.oauthTokenSecret,
+      }),
+    ) as unknown as Record<string, string>
+    const response = await axios.get<ITwitterCommonResponse<Array<ITwitterTweetResponse>>>(url, {
+      headers,
+    })
+    if (Array.isArray(response?.data?.data) && response.data.data.length) {
+      return response.data.data.some((tweet) =>
+        tweet.referenced_tweets?.some(
+          (ref: any) => ref.type === 'replied_to' && ref.id === tweetId,
+        ),
+      )
+    }
+    return false
+  } catch (e) {
+    commonTwitterApiResponseErrorHandler(e, url)
+    return false
+  }
+}
+
 const handleTwitterRetweetTask = async (
   userTwitterAccount: { twitterUserId: string; oauthToken: string; oauthTokenSecret: string },
   task: Task,
@@ -57,9 +95,9 @@ const handleTwitterRetweetTask = async (
   const match = task.target.match(TWEET_URL_REGEX)
   if (!match) return false
   const tweetId = match[1]
-  // 2. 查询该推文的 retweeted_by
+  // 2. 查询用户的 tweets
   const oauth = getOAuth()
-  const url = `https://api.twitter.com/2/tweets/${tweetId}/retweeted_by`
+  const url = `https://api.x.com/2/users/${userTwitterAccount.twitterUserId}/tweets`
   try {
     const request_data = {
       url,
@@ -71,13 +109,15 @@ const handleTwitterRetweetTask = async (
         secret: userTwitterAccount.oauthTokenSecret,
       }),
     ) as unknown as Record<string, string>
-    const response = await axios.get<ITwitterCommonResponse<Array<ITwitterUserResponse>>>(url, {
+    const response = await axios.get<ITwitterCommonResponse<Array<ITwitterTweetResponse>>>(url, {
       headers,
     })
-    console.log(`查询${url},得到retweeted_by列表:`, response.data)
+    console.log(`查询${url},得到tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
-      // 判断当前用户是否在 retweeted_by 列表中
-      return response.data.data.some((u) => u.id === userTwitterAccount.twitterUserId)
+      // 只判断转发类型的推文
+      return response.data.data.some((tweet) =>
+        tweet.referenced_tweets?.some((ref: any) => ref.type === 'retweeted' && ref.id === tweetId),
+      )
     } else {
       return false
     }
@@ -96,9 +136,9 @@ const handleTwitterLikeTask = async (
   const match = task.target.match(TWEET_URL_REGEX)
   if (!match) return false
   const tweetId = match[1]
-  // 2. 查询该推文的 liking_users
+  // 2. 查询该用户的 liked_tweets
   const oauth = getOAuth()
-  const url = `https://api.twitter.com/2/tweets/${tweetId}/liking_users`
+  const url = `https://api.x.com/2/user/${userTwitterAccount.twitterUserId}/liked_tweets`
   try {
     const request_data = {
       url,
@@ -110,13 +150,13 @@ const handleTwitterLikeTask = async (
         secret: userTwitterAccount.oauthTokenSecret,
       }),
     ) as unknown as Record<string, string>
-    const response = await axios.get<ITwitterCommonResponse<Array<ITwitterUserResponse>>>(url, {
+    const response = await axios.get<ITwitterCommonResponse<Array<ITwitterTweetResponse>>>(url, {
       headers,
     })
-    console.log(`查询${url},得到liking_users列表:`, response.data)
+    console.log(`查询${url},得到liked_tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
-      // 判断当前用户是否在 liking_users 列表中
-      return response.data.data.some((u) => u.id === userTwitterAccount.twitterUserId)
+      // 判断当前推文是否在 liked_tweets 列表中
+      return response.data.data.some((t) => t.id === tweetId)
     } else {
       return false
     }
@@ -142,6 +182,8 @@ export const handleTwitterTask = async (tx: Prisma.TransactionClient, user: User
         return await handleTwitterRetweetTask(userTwitterAccount, task)
       case 'like':
         return await handleTwitterLikeTask(userTwitterAccount, task)
+      case 'reply':
+        return await handleTwitterReplyTask(userTwitterAccount, task)
       default:
         return false
     }

@@ -30,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const oauth = getOAuth()
     // 查询当前绑定用户自己的信息
-    const url = `https://api.twitter.com/2/users/me`
+    const url = `https://api.x.com/2/users/me`
     const request_data = {
       url,
       method: 'GET',
