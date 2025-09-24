@@ -76,6 +76,9 @@ const handleTwitterReplyTask = async (
     ) as unknown as Record<string, string>
     const response = await axios.get<ITwitterCommonResponse<Array<ITwitterTweetResponse>>>(url, {
       headers,
+      params: {
+        'tweet.fields': 'referenced_tweets',
+      },
     })
     console.log(`查询${url},得到tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
@@ -119,6 +122,9 @@ const handleTwitterRetweetTask = async (
     ) as unknown as Record<string, string>
     const response = await axios.get<ITwitterCommonResponse<Array<ITwitterTweetResponse>>>(url, {
       headers,
+      params: {
+        'tweet.fields': 'referenced_tweets',
+      },
     })
     console.log(`查询${url},得到tweets列表:`, response.data)
     if (Array.isArray(response?.data?.data) && response.data.data.length) {
