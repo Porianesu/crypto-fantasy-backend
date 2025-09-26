@@ -126,7 +126,7 @@ export const LegendaryDrawCardGuarantee = 60 // 保底抽卡次数
 
 export const CraftCardGuarantee: Record<CARD_RARITY, number> = {
   [CARD_RARITY.NORMAL]: 1,
-  [CARD_RARITY.RARE]: 4,
-  [CARD_RARITY.EPIC]: 10,
+  [CARD_RARITY.RARE]: Infinity,
+  [CARD_RARITY.EPIC]: Infinity,
   [CARD_RARITY.LEGENDARY]: 15,
 }
