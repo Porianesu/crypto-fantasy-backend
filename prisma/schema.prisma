@@ -43,6 +43,7 @@ model User {
   craftCountSinceLastRare      Int                @default(0) // 蓝卡保底计数
   twitterAccount               TwitterAccount?
   userTasks                    UserTask[]
+  userItems                    UserItem[] // 新增字段，用户背包道具
 }
 
 model Card {
@@ -217,4 +218,24 @@ model UserTask {
   createdAt   DateTime  @default(now())
   completedAt DateTime?
   claimedAt   DateTime?
+}
+
+model Item {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String
+  type        String
+  solPrice    Float // 新增字段，表示道具消耗的sol数量
+  faithPrice  Float // 新增字段，表示道具消耗的faith数量
+  image       String?
+  userItems   UserItem[]
+}
+
+model UserItem {
+  id       Int  @id @default(autoincrement())
+  userId   Int
+  itemId   Int
+  quantity Int  @default(1)
+  user     User @relation(fields: [userId], references: [id])
+  item     Item @relation(fields: [itemId], references: [id])
 }
