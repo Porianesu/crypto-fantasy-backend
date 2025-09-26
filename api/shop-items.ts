@@ -2,11 +2,10 @@ import { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../utils/jwt'
 import prisma from '../prisma'
 import { handleAchievementSolConsume } from '../utils/achievement/unique'
+import { setCorsHeaders } from '../utils/common'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  setCorsHeaders(res, 'GET, POST, OPTIONS')
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end()
@@ -78,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           await handleAchievementSolConsume(user, item.price, tx)
         }
         // 扣除余额并发放奖励
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
         const { password, ...userData } = await tx.user.update({
           where: { id: user.id },
           data: {
