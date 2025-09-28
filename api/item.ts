@@ -2,6 +2,7 @@ import { VercelRequest, VercelResponse } from '@vercel/node'
 import { verifyToken } from '../utils/jwt'
 import prisma from '../prisma'
 import { setCorsHeaders } from '../utils/common'
+import { handleItemEffect } from '../utils/item'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res, 'GET, POST, PUT, OPTIONS')
@@ -106,6 +107,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const userItem = await prisma.userItem.findUnique({
       where: { userId_itemId: { userId: user.id, itemId } },
+      include: { item: true },
     })
     if (!userItem || userItem.quantity < quantity) {
       return res.status(400).json({ error: 'Insufficient item quantity' })
@@ -117,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           where: { userId_itemId: { userId: user.id, itemId } },
           data: { quantity: { decrement: quantity } },
         })
-        // TODO: 根据道具类型处理效果
+        await handleItemEffect(tx, user, userItem.item, quantity)
       })
       return res.status(200).json({ success: true })
     } catch (e) {
