@@ -114,14 +114,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     // 预留：根据 item.type 处理不同道具效果
     try {
-      await prisma.$transaction(async (tx) => {
+      const txResult = await prisma.$transaction(async (tx) => {
         await tx.userItem.update({
           where: { userId_itemId: { userId: user.id, itemId } },
           data: { quantity: { decrement: quantity } },
         })
-        await handleItemEffect(tx, user, userItem.item, quantity)
+        const updatedUser = await handleItemEffect(tx, user, userItem.item, quantity)
+        const { password, ...userData } = updatedUser || user
+        return { success: true, user: userData }
       })
-      return res.status(200).json({ success: true })
+      return res.status(200).json(txResult)
     } catch (e) {
       return res
         .status(500)
