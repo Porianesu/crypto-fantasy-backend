@@ -44,6 +44,8 @@ model User {
   twitterAccount               TwitterAccount?
   userTasks                    UserTask[]
   userItems                    UserItem[] // 新增字段，用户背包道具
+  legendaryCoinBoostRoundsLeft Int                @default(0)
+  epicCoinBoostRoundsLeft      Int                @default(0)
 }
 
 model Card {

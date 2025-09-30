@@ -112,7 +112,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!userItem || userItem.quantity < quantity) {
       return res.status(400).json({ error: 'Insufficient item quantity' })
     }
-    // 预留：根据 item.type 处理不同道具效果
     try {
       const txResult = await prisma.$transaction(async (tx) => {
         await tx.userItem.update({
