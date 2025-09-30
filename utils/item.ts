@@ -13,20 +13,24 @@ const handleAddDrawCardsSuccessRate = async (
   user: User,
   rarity: CARD_RARITY,
 ) => {
-  let field
+  let data
   switch (rarity) {
     case CARD_RARITY.LEGENDARY:
-      field = 'legendaryCoinBoostRoundsLeft'
+      data = {
+        legendaryCoinBoostRoundsLeft: { increment: 8 },
+      }
       break
     case CARD_RARITY.EPIC:
-      field = 'epicCoinBoostRoundsLeft'
+      data = {
+        epicCoinBoostRoundsLeft: { increment: 10 },
+      }
       break
     default:
       return
   }
   return tx.user.update({
     where: { id: user.id },
-    data: { [field]: { increment: 1 } },
+    data,
   })
 }
 
