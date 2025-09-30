@@ -130,3 +130,24 @@ export const CraftCardGuarantee: Record<CARD_RARITY, number> = {
   [CARD_RARITY.EPIC]: Infinity,
   [CARD_RARITY.LEGENDARY]: 15,
 }
+
+export const NormalDrawCardsSucceedRate: Record<CARD_RARITY, number> = {
+  [CARD_RARITY.LEGENDARY]: 0.995,
+  [CARD_RARITY.EPIC]: 0.95,
+  [CARD_RARITY.RARE]: 0.75,
+  [CARD_RARITY.NORMAL]: 0,
+}
+
+export const EpicDrawCardsSucceedRate: Record<CARD_RARITY, number> = {
+  [CARD_RARITY.LEGENDARY]: 0.995,
+  [CARD_RARITY.EPIC]: 0.9,
+  [CARD_RARITY.RARE]: 0.5,
+  [CARD_RARITY.NORMAL]: 0,
+}
+
+export const LegendaryDrawCardsSucceedRate: Record<CARD_RARITY, number> = {
+  [CARD_RARITY.LEGENDARY]: 0.99,
+  [CARD_RARITY.EPIC]: 0.8,
+  [CARD_RARITY.RARE]: 0.3,
+  [CARD_RARITY.NORMAL]: 0,
+}

@@ -1,9 +1,32 @@
 import { Item, Prisma, User } from '@prisma/client'
+import { CARD_RARITY } from './config'
 
 const handleAddMeltCurrent = async (tx: Prisma.TransactionClient, user: User, quantity: number) => {
   return tx.user.update({
     where: { id: user.id },
     data: { meltCurrent: { increment: quantity } },
+  })
+}
+
+const handleAddDrawCardsSuccessRate = async (
+  tx: Prisma.TransactionClient,
+  user: User,
+  rarity: CARD_RARITY,
+) => {
+  let field
+  switch (rarity) {
+    case CARD_RARITY.LEGENDARY:
+      field = 'legendaryCoinBoostRoundsLeft'
+      break
+    case CARD_RARITY.EPIC:
+      field = 'epicCoinBoostRoundsLeft'
+      break
+    default:
+      return
+  }
+  return tx.user.update({
+    where: { id: user.id },
+    data: { [field]: { increment: 1 } },
   })
 }
 
@@ -18,6 +41,10 @@ export const handleItemEffect = async (
   switch (item.type) {
     case 'add_melt_current':
       return await handleAddMeltCurrent(tx, user, quantity)
+    case 'add_draw_cards_success_rate_epic':
+      return await handleAddDrawCardsSuccessRate(tx, user, CARD_RARITY.EPIC)
+    case 'add_draw_cards_success_rate_legendary':
+      return await handleAddDrawCardsSuccessRate(tx, user, CARD_RARITY.LEGENDARY)
     default:
       break
   }

@@ -4,7 +4,13 @@ import { verifyToken } from '../utils/jwt'
 import prisma from '../prisma'
 import { handleAchievementCardsCollect } from '../utils/achievement/card-collect'
 import { handleAchievementSolConsume } from '../utils/achievement/unique'
-import { LegendaryDrawCardGuarantee } from '../utils/config'
+import {
+  CARD_RARITY,
+  EpicDrawCardsSucceedRate,
+  LegendaryDrawCardGuarantee,
+  LegendaryDrawCardsSucceedRate,
+  NormalDrawCardsSucceedRate,
+} from '../utils/config'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -58,17 +64,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const result = await prisma.$transaction(async (tx) => {
     // 查询最新用户，获取保底计数
     const freshUser = await tx.user.findUnique({ where: { id: userId } })
+    if (!freshUser) {
+      throw new Error('User not found')
+    }
     const drawCount = freshUser?.drawCountSinceLastLegendary ?? 0
     let legendaryDrawn = false
+    let drawCardsRate
+    let useLegendaryLuckyCoin = false
+    let useEpicLuckyCoin = false
+    if (freshUser.legendaryCoinBoostRoundsLeft) {
+      drawCardsRate = LegendaryDrawCardsSucceedRate
+      useLegendaryLuckyCoin = true
+    } else if (freshUser.epicCoinBoostRoundsLeft) {
+      drawCardsRate = EpicDrawCardsSucceedRate
+      useEpicLuckyCoin = true
+    } else {
+      drawCardsRate = NormalDrawCardsSucceedRate
+    }
     const resultCards = selectedIndexes.map((cardTypeIndex) => {
       const baseIndex = cardTypeIndex * 4
       const cardRaritySeed = Math.random()
-      if (cardRaritySeed >= 0.995) {
+      if (cardRaritySeed >= drawCardsRate[CARD_RARITY.LEGENDARY]) {
         legendaryDrawn = true
         return cardsData[baseIndex + 3] // SSR
-      } else if (cardRaritySeed >= 0.95) {
+      } else if (cardRaritySeed >= drawCardsRate[CARD_RARITY.EPIC]) {
         return cardsData[baseIndex + 2] // SR
-      } else if (cardRaritySeed >= 0.75) {
+      } else if (cardRaritySeed >= drawCardsRate[CARD_RARITY.RARE]) {
         return cardsData[baseIndex + 1] // R
       } else {
         return cardsData[baseIndex] // N
@@ -90,6 +111,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           decrement: costBN.toNumber(),
         },
         drawCountSinceLastLegendary: newDrawCount,
+        legendaryCoinBoostRoundsLeft: {
+          decrement: useLegendaryLuckyCoin ? 1 : 0,
+        },
+        epicCoinBoostRoundsLeft: {
+          decrement: useEpicLuckyCoin ? 1 : 0,
+        },
       },
     })
     // 批量插入UserCard
