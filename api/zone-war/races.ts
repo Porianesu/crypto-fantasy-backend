@@ -9,9 +9,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    const { content } = req.query
+    const { content } = req.body || {}
     console.log('Received content:', content)
-    if (typeof content !== 'string') {
+    if (!content || typeof content !== 'string') {
       return res.status(400).json({ error: 'Invalid content parameter' })
     }
     try {
