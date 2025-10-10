@@ -14,6 +14,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!content) {
       return res.status(400).json({ error: 'Invalid content parameter' })
     }
+    if (Array.isArray(content)) {
+      return res.status(200).json({ success: true, message: 'Received ${content.length} races' })
+    }
     console.log('content prototype:', Object.prototype.toString.call(content))
     try {
       const jsonData = JSON.parse(content)
