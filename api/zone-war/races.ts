@@ -11,9 +11,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'POST') {
     const { content } = req.body || {}
     console.log('Received content:', content)
-    if (!content || typeof content !== 'string') {
+    if (!content) {
       return res.status(400).json({ error: 'Invalid content parameter' })
     }
+    console.log('content prototype:', Object.prototype.toString.call(content))
     try {
       const jsonData = JSON.parse(content)
       console.log('jsonData', jsonData)
