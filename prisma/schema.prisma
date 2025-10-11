@@ -255,7 +255,7 @@ model BaseRace {
 model HybridRace {
   id          Int        @id @default(autoincrement())
   name        String
-  englishName String     @unique
+  englishName String?    @unique
   baseRaces   BaseRace[] @relation("RaceBaseHybrid")
   description String
 }
