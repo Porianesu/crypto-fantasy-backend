@@ -250,6 +250,7 @@ model BaseRace {
   englishName String       @unique
   races       HybridRace[] @relation("RaceBaseHybrid")
   description String
+  skills      Skill[] // 由Skill改为skills
 }
 
 model HybridRace {
@@ -258,4 +259,12 @@ model HybridRace {
   englishName String?    @unique
   baseRaces   BaseRace[] @relation("RaceBaseHybrid")
   description String
+}
+
+model Skill {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  baseRaceId  Int
+  baseRace    BaseRace @relation(fields: [baseRaceId], references: [id])
 }
