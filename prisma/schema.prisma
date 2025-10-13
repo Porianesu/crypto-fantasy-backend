@@ -246,7 +246,7 @@ model UserItem {
 
 model BaseRace {
   id          Int          @id @default(autoincrement())
-  name        String
+  name        String       @unique
   englishName String       @unique
   races       HybridRace[] @relation("RaceBaseHybrid")
   description String
@@ -255,7 +255,7 @@ model BaseRace {
 
 model HybridRace {
   id          Int        @id @default(autoincrement())
-  name        String
+  name        String     @unique
   englishName String?    @unique
   baseRaces   BaseRace[] @relation("RaceBaseHybrid")
   description String
@@ -267,4 +267,5 @@ model Skill {
   description String
   baseRaceId  Int
   baseRace    BaseRace @relation(fields: [baseRaceId], references: [id])
+  createdAt   DateTime @default(now())
 }
