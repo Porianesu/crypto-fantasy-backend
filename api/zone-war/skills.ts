@@ -49,10 +49,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           })
           createdCount++
         } else {
-          // 随机选择一条Skill进行更新
-          const randomSkill = skills[Math.floor(Math.random() * skills.length)]
+          // 选择最早创建的Skill进行更新
+          const earliestSkill = skills.reduce((prev, curr) =>
+            prev.createdAt < curr.createdAt ? prev : curr,
+          )
           await prisma.skill.update({
-            where: { id: randomSkill.id },
+            where: { id: earliestSkill.id },
             data: {
               name: item.name,
               description: item.description,
