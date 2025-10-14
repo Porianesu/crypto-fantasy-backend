@@ -24,7 +24,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     try {
-      const { content } = (req.body as ReceivedData) || {}
+      if (!req.body) {
+        return res.status(400).json({ error: 'Missing request body' })
+      }
+      const requestBody = req.body as ReceivedData
+      console.log('Received request body:', requestBody)
+      const { content } = requestBody
       console.log('Received content:', content)
       if (!content) {
         return res.status(400).json({ error: 'Invalid content parameter' })
