@@ -269,3 +269,29 @@ model Skill {
   baseRace    BaseRace @relation(fields: [baseRaceId], references: [id])
   createdAt   DateTime @default(now())
 }
+
+model QuestionSet {
+  id        Int        @id @default(autoincrement())
+  name      String // 套题名称
+  createdAt DateTime   @default(now())
+  questions Question[]
+}
+
+model Question {
+  id            Int         @id @default(autoincrement())
+  type          String
+  keywords      Json // 关键词数组
+  question      String // 题干
+  questionSet   QuestionSet @relation(fields: [questionSetId], references: [id])
+  questionSetId Int
+  options       Option[]
+}
+
+model Option {
+  id         Int      @id @default(autoincrement())
+  label      String
+  answer     String
+  elements   Json // 元素数组
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId Int
+}
