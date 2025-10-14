@@ -38,6 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           data: {
             name: item.name,
             description: item.description,
+            baseRaceId: baseRace.id,
           },
         })
       }
