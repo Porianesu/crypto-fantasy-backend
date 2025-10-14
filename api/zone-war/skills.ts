@@ -34,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       for (let index = 0; index < content.length; index++) {
         const item = content[index]
         await prisma.skill.update({
-          where: { id: baseRace.id + index },
+          where: { id: (baseRace.id - 1) * 4 + index },
           data: {
             name: item.name,
             description: item.description,
