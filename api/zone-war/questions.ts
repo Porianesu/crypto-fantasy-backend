@@ -16,14 +16,65 @@ interface ReceivedData {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(res, 'POST, OPTIONS')
+  setCorsHeaders(res, 'POST, OPTIONS, GET')
 
   if (req.method === 'OPTIONS') {
     return res.status(204).end()
   }
+  try {
+    if (req.method === 'GET') {
+      // 随机返回一套题集
+      const allIds = await prisma.questionSet.findMany({ select: { id: true } })
+      if (!allIds.length) {
+        return res.status(404).json({ error: '没有可用的题集' })
+      }
+      const { questionSetId } = req.query
+      let queryQuestionSetId
+      if (questionSetId && typeof questionSetId === 'string') {
+        queryQuestionSetId = Number(questionSetId)
+      } else {
+        const randomIndex = Math.floor(Math.random() * allIds.length)
+        queryQuestionSetId = allIds[randomIndex].id
+      }
+      // 查询指定 questionSetId
+      const questionSet = await prisma.questionSet.findUnique({
+        where: { id: queryQuestionSetId },
+        include: {
+          questions: {
+            include: { options: true },
+          },
+        },
+      })
+      if (!questionSet) {
+        return res.status(404).json({ error: '未找到指定的题集' })
+      }
+      // 格式化数据
+      return res.status(200).json({
+        questionSet: {
+          id: questionSet.id,
+          name: questionSet.name,
+          createdAt: questionSet.createdAt,
+          questions: questionSet.questions
+            .sort((a, b) => a.id - b.id)
+            .map((q) => ({
+              id: q.id,
+              type: q.type,
+              keywords: q.keywords,
+              question: q.question,
+              options: q.options
+                .sort((a, b) => a.id - b.id)
+                .map((opt) => ({
+                  id: opt.id,
+                  label: opt.label,
+                  answer: opt.answer,
+                  elements: opt.elements,
+                })),
+            })),
+        },
+      })
+    }
 
-  if (req.method === 'POST') {
-    try {
+    if (req.method === 'POST') {
       if (!req.body) {
         return res.status(400).json({ error: 'Missing request body' })
       }
@@ -83,9 +134,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
       }
       console.log('content prototype:', Object.prototype.toString.call(content))
-    } catch (e) {
-      return res.status(500).end({ error: 'Internal Server Error', details: e })
     }
+  } catch (e) {
+    return res.status(500).end({ error: 'Internal Server Error', details: e })
   }
   return res.status(405).json({ error: 'Method not allowed' })
 }
