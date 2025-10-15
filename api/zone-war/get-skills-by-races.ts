@@ -22,21 +22,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!content || !Array.isArray(content.races) || content.races.length === 0) {
         return res.status(400).json({ error: 'Invalid races parameter' })
       }
+      const sortedContentRaces = content.races.sort((a, b) => {
+        return a.localeCompare(b)
+      })
 
       // 查询所有BaseRace
       const allBaseRaces = await prisma.baseRace.findMany()
       const baseRaceNames = allBaseRaces.map((r) => r.name)
 
       // 校验 races 是否都在 BaseRace.name 中
-      for (const race of content.races) {
+      for (const race of sortedContentRaces) {
         if (!baseRaceNames.includes(race)) {
           return res.status(400).json({ error: `Race ${race} not found in BaseRace` })
         }
       }
 
       let matchedRace = null
-      if (content.races.length === 1) {
-        matchedRace = allBaseRaces.find((r) => r.name === content.races[0])
+      if (sortedContentRaces.length === 1) {
+        matchedRace = allBaseRaces.find((r) => r.name === sortedContentRaces[0])
       } else {
         // 查询所有HybridRace，找到baseRaces字段与races完全匹配的那条
         const allHybridRaces = await prisma.hybridRace.findMany({
@@ -45,10 +48,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
         })
         matchedRace = allHybridRaces.find((hr) => {
-          if (!Array.isArray(hr.baseRaces) || hr.baseRaces.length !== content.races.length)
+          if (!Array.isArray(hr.baseRaces) || hr.baseRaces.length !== sortedContentRaces.length)
             return false
-          // 检查内容和顺序完全一致
-          return hr.baseRaces.map((b: any) => b.name).join(',') === content.races.join(',')
+          // baseRaces字段里的name也进行排序后再比较
+          const sortedBaseRaces = hr.baseRaces.map((b: any) => b.name).sort()
+          return sortedBaseRaces.join(',') === sortedContentRaces.join(',')
         })
       }
 
@@ -62,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const skills = await prisma.skill.findMany({
         where: {
           baseRace: {
-            name: { in: content.races },
+            name: { in: sortedContentRaces },
           },
         },
       })
