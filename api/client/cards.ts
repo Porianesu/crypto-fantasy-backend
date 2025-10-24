@@ -7,6 +7,8 @@ interface ReceivedData {
     name: string
     description?: string
     imageUrl?: string
+    health_points?: number
+    attack_points?: number
     skills?: Array<{
       name: string
       description?: string
@@ -29,6 +31,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const { name, description, imageUrl, skills } = card
+      let { health_points, attack_points } = card
+
       if (!name || typeof name !== 'string' || !name.trim()) {
         return res.status(400).json({ error: 'Card name is required' })
       }
@@ -46,47 +50,70 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
 
-      // 先为每个 skill 做 upsert（按 name 唯一），收集 id
-      const skillInputs = skills ?? []
-      const skillUpsertPromises = skillInputs.map((s) =>
-        prisma.clientCardSkill.upsert({
-          where: { name: s.name },
-          create: { name: s.name, description: s.description ?? '' },
-          update: { description: s.description ?? '' },
-        })
-      )
-
-      const upsertedSkills = await prisma.$transaction(skillUpsertPromises)
-      const skillIds = upsertedSkills.map((sk) => sk.id)
-
-      // 查找是否已有同名 ClientCard
-      const existing = await prisma.clientCard.findUnique({ where: { name } })
-
-      if (existing) {
-        // 更新并替换关系为当前提供的 skills
-        await prisma.clientCard.update({
-          where: { id: existing.id },
-          data: {
-            description: description ?? existing.description,
-            imageUrl: imageUrl ?? existing.imageUrl,
-            skills: { set: skillIds.map((id) => ({ id })) },
-          },
-        })
-
-        return res.status(200).json({ success: true, action: 'updated', name })
+      // 健壮化数值字段
+      if (health_points == null || Number.isNaN(Number(health_points))) {
+        health_points = 0
       } else {
-        // 创建 ClientCard 并连接已存在/新建的 skills
-        await prisma.clientCard.create({
-          data: {
-            name,
-            description: description ?? '',
-            imageUrl: imageUrl ?? '',
-            skills: { connect: skillIds.map((id) => ({ id })) },
-          },
+        health_points = Math.floor(Number(health_points))
+      }
+      if (attack_points == null || Number.isNaN(Number(attack_points))) {
+        attack_points = 0
+      } else {
+        attack_points = Math.floor(Number(attack_points))
+      }
+
+      // 使用交互式事务：先 upsert skills（按 name 唯一），再 upsert clientCard 并设置/连接 skills
+      const result = await prisma.$transaction(async (tx) => {
+        const skillInputs = skills ?? []
+        const upsertedSkills = await Promise.all(
+          skillInputs.map((s) =>
+            tx.clientCardSkill.upsert({
+              where: { name: s.name },
+              create: { name: s.name, description: s.description ?? '' },
+              update: { description: s.description ?? '' },
+            }),
+          ),
+        )
+
+        const skillIds = upsertedSkills.map((sk) => sk.id)
+
+        // 准备 upsert 的数据体
+        const cardDataCreate: any = {
+          name,
+          description: description ?? '',
+          imageUrl: imageUrl ?? '',
+          health_points,
+          attack_points,
+        }
+        const cardDataUpdate: any = {
+          description: description ?? undefined,
+          imageUrl: imageUrl ?? undefined,
+          health_points,
+          attack_points,
+        }
+
+        if (skillIds.length > 0) {
+          cardDataCreate.skills = { connect: skillIds.map((id) => ({ id })) }
+          cardDataUpdate.skills = { set: skillIds.map((id) => ({ id })) }
+        }
+
+        // 使用 upsert 保证并发安全
+        const upsertedCard = await tx.clientCard.upsert({
+          where: { name },
+          create: cardDataCreate,
+          update: cardDataUpdate,
+          include: { skills: true },
         })
 
-        return res.status(201).json({ success: true, action: 'created', name })
-      }
+        return upsertedCard
+      })
+
+      // 判断动作类型（created/updated）通过查询是否在 migrations 增量无法直接知晓，使用返回的 createdAt/updatedAt
+      // 如果 createdAt === updatedAt（刚创建），则可以认为是新建
+      const action =
+        result.createdAt.getTime() === result.updatedAt.getTime() ? 'created' : 'updated'
+
+      return res.status(200).json({ success: true, action, card: result })
     } catch (e: any) {
       console.error('cards.ts error:', e)
       return res.status(500).json({ error: 'Internal Server Error', details: String(e) })
@@ -95,4 +122,3 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return res.status(405).json({ error: 'Method not allowed' })
 }
-
