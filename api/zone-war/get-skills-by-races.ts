@@ -4,9 +4,7 @@ import prisma from '../../prisma'
 
 interface ReceivedData {
   content: {
-    prompt: string
     races: Array<string>
-    inscription: string
   }
 }
 export default async function handler(req: VercelRequest, res: VercelResponse) {

@@ -295,3 +295,22 @@ model Option {
   question   Question @relation(fields: [questionId], references: [id])
   questionId Int
 }
+
+model ClientCard {
+  id          Int               @id @default(autoincrement())
+  name        String            @unique
+  description String
+  imageUrl    String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  skills      ClientCardSkill[]
+}
+
+model ClientCardSkill {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String
+  clientCards ClientCard[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
