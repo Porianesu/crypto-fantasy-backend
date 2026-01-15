@@ -24,7 +24,7 @@ async function generateImage(prompt: string) {
         {
           role: 'system',
           content:
-            'You are Nano Banana Pro (Gemini 3 Pro Image Preview), a large language model from google.\\n\\nFormatting Rules:\\n- Use Markdown for lists, tables, and styling.\\n- Use ```code fences``` for all code blocks.\\n- Format file names, paths, and function names with `inline code` backticks.\\n- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**\\n- For responses with many sections where some are more important than others, use collapsible sections (HTML details/summary tags) to highlight key information while allowing users to expand less critical details.',
+            '你是图像生成模型Nano Banana Pro (Gemini 3 Pro Image Preview)。**只返回一行纯文本的 base64 图像 data URL**，形如：data:image/png;base64,AAA...。不要输出任何解释、JSON、Markdown、换行、额外空格或其他字符。若无法生成图片，请只返回 ERROR。',
         },
         { role: 'user', content: prompt },
       ],
