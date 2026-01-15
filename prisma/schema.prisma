@@ -11,41 +11,42 @@ datasource db {
 }
 
 model User {
-  id                           Int                @id @default(autoincrement())
-  email                        String?            @unique // 可选，唯一
+  id                           Int                  @id @default(autoincrement())
+  email                        String?              @unique // 可选，唯一
   password                     String? // 可选
   avatar                       String?
-  solAmount                    Float              @default(0)
-  createdAt                    DateTime           @default(now())
-  updatedAt                    DateTime           @updatedAt
-  hasAlreadyReadGuide          Boolean            @default(false)
-  faithAmount                  Float              @default(0)
-  expPercent                   Float              @default(0)
-  meltCurrent                  Int                @default(0)
-  meltMax                      Int                @default(0)
-  cardsOwned                   UserCard[]         @relation("UserCardsOwned")
-  deckCards                    Json               @default("[]") // 存储 [{ cardId: Int, userCardId: Int }]，顺序即为卡组顺序
-  deckPower                    Int                @default(0) // 新增字段，存储卡组总战力
+  solAmount                    Float                @default(0)
+  createdAt                    DateTime             @default(now())
+  updatedAt                    DateTime             @updatedAt
+  hasAlreadyReadGuide          Boolean              @default(false)
+  faithAmount                  Float                @default(0)
+  expPercent                   Float                @default(0)
+  meltCurrent                  Int                  @default(0)
+  meltMax                      Int                  @default(0)
+  cardsOwned                   UserCard[]           @relation("UserCardsOwned")
+  deckCards                    Json                 @default("[]") // 存储 [{ cardId: Int, userCardId: Int }]，顺序即为卡组顺序
+  deckPower                    Int                  @default(0) // 新增字段，存储卡组总战力
   RedemptionRecord             RedemptionRecord[]
-  nickname                     String             @unique // 改为必填字段，唯一
+  nickname                     String               @unique // 改为必填字段，唯一
   purchases                    UserShopPurchase[] // 新增字段，用户购买记录
-  newbieRewardClaimed          Boolean            @default(false) // 新增字段，标记是否已领取新手礼包
+  newbieRewardClaimed          Boolean              @default(false) // 新增字段，标记是否已领取新手礼包
   signIns                      UserSignIn[]
   UserAchievement              UserAchievement[]
-  inviteCode                   String?            @unique // 用户唯一邀请码，可选
-  invitees                     Invitation[]       @relation("InvitationInvitee")
-  inviter                      Invitation[]       @relation("InvitationInviter")
-  address                      String?            @unique // 新增，钱包地址
+  inviteCode                   String?              @unique // 用户唯一邀请码，可选
+  invitees                     Invitation[]         @relation("InvitationInvitee")
+  inviter                      Invitation[]         @relation("InvitationInviter")
+  address                      String?              @unique // 新增，钱包地址
   nonce                        String? // 新增，MetaMask 登录用
-  drawCountSinceLastLegendary  Int                @default(0) // 橙卡保底计数
-  craftCountSinceLastLegendary Int                @default(0) // 橙卡保底计数
-  craftCountSinceLastEpic      Int                @default(0) // 紫卡保底计数
-  craftCountSinceLastRare      Int                @default(0) // 蓝卡保底计数
+  drawCountSinceLastLegendary  Int                  @default(0) // 橙卡保底计数
+  craftCountSinceLastLegendary Int                  @default(0) // 橙卡保底计数
+  craftCountSinceLastEpic      Int                  @default(0) // 紫卡保底计数
+  craftCountSinceLastRare      Int                  @default(0) // 蓝卡保底计数
   twitterAccount               TwitterAccount?
   userTasks                    UserTask[]
   userItems                    UserItem[] // 新增字段，用户背包道具
-  legendaryCoinBoostRoundsLeft Int                @default(0)
-  epicCoinBoostRoundsLeft      Int                @default(0)
+  legendaryCoinBoostRoundsLeft Int                  @default(0)
+  epicCoinBoostRoundsLeft      Int                  @default(0)
+  userGeneratedImages          UserGeneratedImage[]
 }
 
 model Card {
@@ -315,4 +316,19 @@ model ClientCardSkill {
   clientCards ClientCard[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+}
+
+model UserGeneratedImage {
+  id              Int      @id @default(autoincrement())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          Int
+  imageBytes      Bytes // 二进制图片数据
+  cardName        String // 卡牌名字
+  cardType        String // 卡牌类型
+  cardEffect      String // 卡牌效果
+  cardDescription String? // 卡牌描述，可选
+  artStyle        String? // 卡牌画风，可选
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
 }
