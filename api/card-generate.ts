@@ -29,8 +29,20 @@ async function generateImage(prompt: string) {
         { role: 'user', content: prompt },
       ],
     }),
-  })
+  }) // 打印网络层信息（不包含敏感 header）
+  console.log('fetch status:', res.status, res.statusText)
+  console.log('fetch headers:', Object.fromEntries(res.headers))
+
   const data = await res.json()
+
+  // 打印解析后的响应体（调试用）
+  console.log('response data:', data)
+
+  // 如果请求失败，可同时查看状态和返回体
+  if (!res.ok) {
+    console.error('Image generation failed:', res.status)
+    console.error('response body:', data)
+  }
   if (!data?.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
     throw new Error('Failed to generate image')
   }
