@@ -121,8 +121,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       })
 
-      const { imageBytes, ...meta } = created as any
-      return res.status(201).json({ success: true, image: meta })
+      const { imageBytes, ...meta } = created
+      return res.status(201).json({ success: true, image: { ...meta, url: imageUrl } })
     } catch (e) {
       return res.status(500).json({
         error: e instanceof Error ? e.message : 'Internal Server Error',
@@ -162,9 +162,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         if (includeBytes && r.imageBytes) {
           // prisma returns Buffer/Uint8Array for Bytes, normalize to Buffer
-          const buf = Buffer.isBuffer(r.imageBytes)
-            ? r.imageBytes
-            : Buffer.from(r.imageBytes as any)
+          const buf = Buffer.isBuffer(r.imageBytes) ? r.imageBytes : Buffer.from(r.imageBytes)
           return { ...base, imageBase64: buf.toString('base64') }
         }
         return base
