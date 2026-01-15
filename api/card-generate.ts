@@ -36,7 +36,7 @@ async function generateImage(prompt: string) {
   const data = await res.json()
 
   // 打印解析后的响应体（调试用）
-  console.log('response data:', data)
+  console.log('response data:', data?.choices?.[0]?.message)
 
   // 如果请求失败，可同时查看状态和返回体
   if (!res.ok) {
