@@ -53,7 +53,7 @@ async function generateImage(prompt: string) {
   }
   if (data?.choices?.[0]?.message?.images?.[0]?.image_url?.url) {
     console.log('图片在images里')
-    resultUrl = data?.choices?.[0]?.images?.[0]?.image_url
+    resultUrl = data.choices[0].images[0].image_url.url
   }
   if (!resultUrl) {
     throw new Error('Failed to generate image')
@@ -106,6 +106,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let imageUrl: unknown
     try {
       imageUrl = await generateImage(prompt)
+      console.log('generated imageUrl:', imageUrl)
     } catch (e) {
       return res.status(502).json({
         error: 'Image generation failed',
