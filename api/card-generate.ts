@@ -83,7 +83,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     promptParts.push(`卡牌类型：${cardType}`)
     promptParts.push(`卡牌效果：${cardEffect}`)
     if (cardDescription) promptParts.push(`卡牌描述：${cardDescription || '自行发挥'}`)
-    if (artStyle) promptParts.push(`画风：${artStyle}`)
+    if (artStyle) promptParts.push(`画风：${artStyle || 'masterpiece, 8k resolution --ar 2:3'}`)
+    promptParts.push(
+      `要求: 根据输入生成并只返回图片内容，按模型默认的图片字段返回，不要返回任何解释或多余文字。若无法生成图片，请只返回 ERROR。`,
+    )
     const prompt = promptParts.join('\n')
     console.log('Generated prompt:', prompt)
 
