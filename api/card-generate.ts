@@ -158,19 +158,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-      // 现有的 userGeneratedImage model 需要某些字段（例如原先的 cardName/cardType/cardEffect），
-      // 为了兼容现有 schema，如果用户只传 prompt，我们用合理的默认值保存。
+      // 现有的 userGeneratedImage model 需要某些字段（以前有 cardName/cardType/cardEffect），
+      // 现在 schema 已改为只保留 prompt 字段，我们将 prompt 保存到对应字段。
       const created = await prisma.userGeneratedImage.create({
         data: {
           userId: user.id,
           imageBytes: buffer,
-          // 将 prompt 储存在 cardEffect（或其他可用字段）中以便后续检索；
-          // cardName/Type 使用通用默认值以兼容现有 schema
-          cardName: `Generated - ${prompt.slice(0, 30)}`,
-          cardType: 'generated',
-          cardEffect: prompt.slice(0, 500),
-          cardDescription: null,
-          artStyle: null,
         },
       })
 
@@ -207,11 +200,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           select: {
             id: true,
             userId: true,
-            cardName: true,
-            cardType: true,
-            cardEffect: true,
-            cardDescription: true,
-            artStyle: true,
             createdAt: true,
             imageBytes: includeBytes,
           },
@@ -230,11 +218,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           select: {
             id: true,
             userId: true,
-            cardName: true,
-            cardType: true,
-            cardEffect: true,
-            cardDescription: true,
-            artStyle: true,
             createdAt: true,
             imageBytes: includeBytes,
           },
