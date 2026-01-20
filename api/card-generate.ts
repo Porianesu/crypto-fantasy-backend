@@ -38,6 +38,7 @@ async function generateImage(prompt: string, referenceImage?: Array<string>) {
     body: JSON.stringify({
       model: 'google/gemini-3-pro-image-preview',
       stream: false,
+      modalities: ['text', 'image'],
       messages: [
         {
           role: 'system',
@@ -82,7 +83,7 @@ async function generateImage(prompt: string, referenceImage?: Array<string>) {
     resultUrl = data.choices[0].message.images[0].image_url.url
   }
   if (!resultUrl) {
-    throw new Error('Failed to generate image')
+    throw new Error('Response data has no image URL')
   }
   return resultUrl
 }
@@ -126,7 +127,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 调用生成接口（将 reference images 传给模型，让模型在生成时参考或修改）
     let imageUrl: unknown
     try {
-      imageUrl = await generateImage(prompt, imagesArray)
+      const promptParts = [prompt]
+      promptParts.push(
+        `要求: 根据输入生成并只返回图片内容，按模型默认的图片字段返回，不要返回任何解释或多余文字。若无法生成图片，请只返回 ERROR。`,
+      )
+      const promptString = promptParts.join('\n')
+      imageUrl = await generateImage(promptString, imagesArray)
       console.log('generated imageUrl:', imageUrl)
     } catch (e) {
       return res.status(502).json({
