@@ -168,7 +168,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const skip = (page - 1) * limit
 
     try {
-      const [total, rows] = await Promise.all([
+      const [total, images] = await Promise.all([
         prisma.userGeneratedImage.count({ where: { userId: user.id } }),
         prisma.userGeneratedImage.findMany({
           where: { userId: user.id },
@@ -177,24 +177,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           take: limit,
         }),
       ])
-
-      const images = rows.map((r) => {
-        const base = {
-          id: r.id,
-          cardName: r.cardName,
-          cardType: r.cardType,
-          cardEffect: r.cardEffect,
-          cardDescription: r.cardDescription,
-          artStyle: r.artStyle,
-          createdAt: r.createdAt,
-        }
-        if (includeBytes && r.imageBytes) {
-          // prisma returns Buffer/Uint8Array for Bytes, normalize to Buffer
-          const buf = Buffer.isBuffer(r.imageBytes) ? r.imageBytes : Buffer.from(r.imageBytes)
-          return { ...base, imageBase64: buf.toString('base64') }
-        }
-        return base
-      })
 
       return res.status(200).json({ images, total, page, limit })
     } catch (e) {
