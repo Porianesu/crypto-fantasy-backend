@@ -4,7 +4,7 @@ import prisma from '../prisma'
 import { setCorsHeaders } from '../utils/common'
 
 // API: /api/card-generate
-// GET  - 获取当前用户的生成图片（分页）
+// GET  - 获取当前用户的生成图片（分页或单图查询）
 // POST - 存储一张用户生成的图片（接受 base64 字符串）
 
 const OpenRouterKey = process.env.OPENROUTER_KEY
@@ -159,8 +159,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // 分页查询当前用户生成的图片
-    // Query params: page (1-based), limit, includeBytes (true/false)
+    // 支持两种查询：
+    // - 单图查询：?id=... (只返回当前用户且与 id 对应的那一张)
+    // - 分页查询：?page=&limit=&includeBytes=
+    const rawId = req.query.id ? String(req.query.id) : null
+    const idParam = rawId ? Number(rawId) : null
+    if (rawId && (typeof idParam !== 'number' || Number.isNaN(idParam))) {
+      return res.status(400).json({ error: 'id must be a valid number' })
+    }
+
     const page = Number(req.query.page ?? 1) || 1
     const limit = Math.min(Math.max(Number(req.query.limit ?? 10) || 10, 1), 100)
     const includeBytes = String(req.query.includeBytes ?? 'false') === 'true'
@@ -168,6 +175,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const skip = (page - 1) * limit
 
     try {
+      if (idParam !== null) {
+        // 单图请求：确保图片属于当前用户
+        const image = await prisma.userGeneratedImage.findFirst({
+          where: { id: idParam, userId: user.id },
+          select: {
+            id: true,
+            userId: true,
+            cardName: true,
+            cardType: true,
+            cardEffect: true,
+            cardDescription: true,
+            artStyle: true,
+            createdAt: true,
+            imageBytes: includeBytes,
+          },
+        })
+        if (!image) return res.status(404).json({ error: 'Image not found' })
+        return res.status(200).json({ image })
+      }
+
       const [total, images] = await Promise.all([
         prisma.userGeneratedImage.count({ where: { userId: user.id } }),
         prisma.userGeneratedImage.findMany({
@@ -175,6 +202,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           orderBy: { createdAt: 'desc' },
           skip,
           take: limit,
+          select: {
+            id: true,
+            userId: true,
+            cardName: true,
+            cardType: true,
+            cardEffect: true,
+            cardDescription: true,
+            artStyle: true,
+            createdAt: true,
+            imageBytes: includeBytes,
+          },
         }),
       ])
 
