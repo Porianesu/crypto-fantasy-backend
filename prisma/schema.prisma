@@ -319,16 +319,11 @@ model ClientCardSkill {
 }
 
 model UserGeneratedImage {
-  id              Int      @id @default(autoincrement())
-  user            User     @relation(fields: [userId], references: [id])
-  userId          Int
-  imageBytes      Bytes // 二进制图片数据
-  cardName        String // 卡牌名字
-  cardType        String // 卡牌类型
-  cardEffect      String // 卡牌效果
-  cardDescription String? // 卡牌描述，可选
-  artStyle        String? // 卡牌画风，可选
-  createdAt       DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  imageBytes Bytes // 二进制图片数据
+  createdAt  DateTime @default(now())
 
   @@index([userId])
 }
