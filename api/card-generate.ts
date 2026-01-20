@@ -5,12 +5,30 @@ import { setCorsHeaders } from '../utils/common'
 
 // API: /api/card-generate
 // GET  - 获取当前用户的生成图片（分页或单图查询）
-// POST - 存储一张用户生成的图片（接受 base64 字符串）
+// POST - 通过 AI 生成或基于上传图片修改图片（接受 prompt，支持可选 image）
 
 const OpenRouterKey = process.env.OPENROUTER_KEY
 if (!OpenRouterKey) throw new Error('OPENROUTER_KEY not set')
 
-async function generateImage(prompt: string) {
+async function generateImage(prompt: string, referenceImage?: Array<string>) {
+  const userContent: Array<{
+    type: string
+    text?: string
+    image_url?: {
+      url: string
+    }
+  }> = [{ type: 'text', text: prompt }]
+  if (referenceImage?.length) {
+    referenceImage.forEach((image) => {
+      userContent.push({
+        image_url: {
+          url: image,
+        },
+        type: 'image_url',
+      })
+    })
+  }
+
   const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -26,12 +44,20 @@ async function generateImage(prompt: string) {
           content:
             'You are Nano Banana Pro (Gemini 3 Pro Image Preview), a large language model from google.\\n\\nFormatting Rules:\\n- Use Markdown for lists, tables, and styling.\\n- Use ```code fences``` for all code blocks.\\n- Format file names, paths, and function names with `inline code` backticks.\\n- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**\\n- For responses with many sections where some are more important than others, use collapsible sections (HTML details/summary tags) to highlight key information while allowing users to expand less critical details.',
         },
-        { role: 'user', content: prompt },
+        { role: 'user', content: userContent },
       ],
     }),
-  }) // 打印网络层信息（不包含敏感 header）
+  })
+
+  // 打印网络层信息（不包含敏感 header）
   console.log('fetch status:', res.status, res.statusText)
-  console.log('fetch headers:', Object.fromEntries(res.headers))
+  // headers is a Headers object; convert to plain object for logging
+  try {
+    console.log('fetch headers:', Object.fromEntries(res.headers))
+  } catch (e) {
+    // Object.fromEntries on Headers may throw in some envs; fallback to simple log
+    console.log('fetch headers: (unable to convert)')
+  }
 
   const data = await res.json()
 
@@ -43,9 +69,9 @@ async function generateImage(prompt: string) {
     console.error('Image generation failed:', res.status)
     console.error('response body:', data)
   }
-  let resultUrl
+  let resultUrl: string | undefined
   if (data?.choices?.[0]?.message?.content) {
-    const content = data.choices[0].message.content.trim()
+    const content = String(data.choices[0].message.content).trim()
     if (content.startsWith('data:image/')) {
       console.log('图片在content里')
       resultUrl = content
@@ -75,37 +101,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    // 存储用户生成的图片
-    // body: { cardName: string, cardType: string, cardEffect: string, cardDescription?: string, artStyle?: string }
-    const { cardName, cardType, cardEffect, cardDescription, artStyle } = req.body || {}
-    if (!cardName || typeof cardName !== 'string') {
-      return res.status(400).json({ error: 'cardName is required and must be a string' })
-    }
-    if (!cardType || typeof cardType !== 'string') {
-      return res.status(400).json({ error: 'cardType is required and must be a string' })
-    }
-    if (!cardEffect || typeof cardEffect !== 'string') {
-      return res.status(400).json({ error: 'cardEffect is required and must be a string' })
+    // 新的 POST 接口：只需要一个必填字段 prompt，支持可选 images（数组，元素可为 data:URL 或公网 URL）
+    // body: { prompt: string, images?: string[] | string }
+    const { prompt, images } = req.body || {}
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(400).json({ error: 'prompt is required and must be a string' })
     }
 
-    // 构造供 Nano Banana 使用的中文提示词（prompt）
-    // 目标：用简洁明确的中文描述卡牌的名称、类型、效果、描述与画风，强调主体、色调与风格，便于生成高质量图片。
-    const promptParts: string[] = []
-    promptParts.push(`卡牌名称：${cardName}`)
-    promptParts.push(`卡牌类型：${cardType}`)
-    promptParts.push(`卡牌效果：${cardEffect}`)
-    if (cardDescription) promptParts.push(`卡牌描述：${cardDescription || '自行发挥'}`)
-    if (artStyle) promptParts.push(`画风：${artStyle || 'masterpiece, 8k resolution --ar 2:3'}`)
-    promptParts.push(
-      `要求: 根据输入生成并只返回图片内容，按模型默认的图片字段返回，不要返回任何解释或多余文字。若无法生成图片，请只返回 ERROR。`,
-    )
-    const prompt = promptParts.join('\n')
-    console.log('Generated prompt:', prompt)
+    // Normalize images to string[] if provided. Accept a single string or an array of strings.
+    let imagesArray: string[] | undefined
+    if (images !== undefined) {
+      if (typeof images === 'string') {
+        imagesArray = [images]
+      } else if (Array.isArray(images) && images.every((i) => typeof i === 'string')) {
+        imagesArray = images
+      } else {
+        return res.status(400).json({ error: 'images must be a string or an array of strings' })
+      }
+      // optional: limit number of reference images to avoid huge payloads
+      if (imagesArray.length > 5)
+        return res.status(400).json({ error: 'max 5 reference images allowed' })
+    }
 
-    // 调用生成接口
+    // 调用生成接口（将 reference images 传给模型，让模型在生成时参考或修改）
     let imageUrl: unknown
     try {
-      imageUrl = await generateImage(prompt)
+      imageUrl = await generateImage(prompt, imagesArray)
       console.log('generated imageUrl:', imageUrl)
     } catch (e) {
       return res.status(502).json({
@@ -137,15 +158,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
+      // 现有的 userGeneratedImage model 需要某些字段（例如原先的 cardName/cardType/cardEffect），
+      // 为了兼容现有 schema，如果用户只传 prompt，我们用合理的默认值保存。
       const created = await prisma.userGeneratedImage.create({
         data: {
           userId: user.id,
           imageBytes: buffer,
-          cardName,
-          cardType: cardType,
-          cardEffect,
-          cardDescription: cardDescription ?? null,
-          artStyle: artStyle ?? null,
+          // 将 prompt 储存在 cardEffect（或其他可用字段）中以便后续检索；
+          // cardName/Type 使用通用默认值以兼容现有 schema
+          cardName: `Generated - ${prompt.slice(0, 30)}`,
+          cardType: 'generated',
+          cardEffect: prompt.slice(0, 500),
+          cardDescription: null,
+          artStyle: null,
         },
       })
 
